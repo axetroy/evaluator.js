@@ -1,5 +1,6 @@
 import * as acorn from "acorn";
 
+// List of TypedArray constructors available in the environment
 const typeArrayConstructors = [
 	Int8Array,
 	Uint8Array,
@@ -14,6 +15,7 @@ const typeArrayConstructors = [
 	globalThis.BigUint64Array,
 ].filter(Boolean);
 
+// Set of methods that mutate their objects and should be blocked for safety
 const mutableMethods = new Set([
 	Array.prototype.push,
 	Array.prototype.pop,
@@ -132,7 +134,7 @@ export class Evaluator {
 	evaluate(expression) {
 		const ast = acorn.parse(expression, { ecmaVersion: "latest" });
 
-		// 从根节点开始递归求值
+		// Start recursive evaluation from the root node
 		return this.execute(ast.body);
 	}
 
