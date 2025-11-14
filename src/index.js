@@ -1,5 +1,8 @@
 import { Evaluator } from "./Evaluator.js";
 
+// Regular expression to match ${{ expression }} template patterns
+const TEMPLATE_EXPRESSION_REGEX = /\$\{\{((?:[^{}]|{[^{}]*})+)\}\}/g;
+
 /**
  * Evaluates a JavaScript expression with an optional context.
  * @param {string} expression - The JavaScript expression to evaluate
@@ -20,9 +23,8 @@ export function evaluatorExpression(expression, context) {
  */
 export function evaluatorTemplate(template, context) {
 	const evaluator = new Evaluator(context);
-	const REGEX = /\$\{\{((?:[^{}]|{[^{}]*})+)\}\}/g;
 	
-	return template.replace(REGEX, (match, expression) => {
+	return template.replace(TEMPLATE_EXPRESSION_REGEX, (match, expression) => {
 		try {
 			const value = evaluator.evaluate(expression.trim());
 			return String(value);
