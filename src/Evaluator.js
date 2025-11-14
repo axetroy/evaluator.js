@@ -1,5 +1,6 @@
 import * as acorn from "acorn";
 
+// List of TypedArray constructors available in the environment
 const typeArrayConstructors = [
 	Int8Array,
 	Uint8Array,
@@ -14,6 +15,7 @@ const typeArrayConstructors = [
 	globalThis.BigUint64Array,
 ].filter(Boolean);
 
+// Set of methods that mutate their objects and should be blocked for safety
 const mutableMethods = new Set([
 	Array.prototype.push,
 	Array.prototype.pop,
@@ -33,10 +35,14 @@ const mutableMethods = new Set([
 	DataView.prototype.setUint32,
 	DataView.prototype.setFloat32,
 	DataView.prototype.setFloat64,
-	// TypeArray
-	...typeArrayConstructors.map((obj) => {
-		return [obj.prototype.set, obj.prototype.fill, obj.prototype.copyWithin, obj.prototype.reverse, obj.prototype.sort];
-	}),
+	// TypedArray methods
+	...typeArrayConstructors.flatMap((TypedArray) => [
+		TypedArray.prototype.set,
+		TypedArray.prototype.fill,
+		TypedArray.prototype.copyWithin,
+		TypedArray.prototype.reverse,
+		TypedArray.prototype.sort,
+	]),
 
 	Object.freeze,
 	Object.defineProperty,
@@ -66,7 +72,15 @@ const mutableMethods = new Set([
 	Date.prototype.setTime,
 ]);
 
+/**
+ * A JavaScript expression evaluator that safely evaluates expressions within a sandboxed environment.
+ * Supports various JavaScript features including arithmetic, logical operations, functions, and more.
+ */
 export class Evaluator {
+	/**
+	 * Creates a new Evaluator instance.
+	 * @param {Object} [variables={}] - An optional object containing variables to make available in the evaluation context
+	 */
 	constructor(variables = {}) {
 		const globalScope = Object.assign(Object.create(null), {
 			Infinity,
@@ -109,18 +123,27 @@ export class Evaluator {
 				return acc;
 			}, {}),
 		});
-		this.scopes = [variables, globalScope]; // 作用域栈
+		this.scopes = [variables, globalScope]; // Scope stack: [user variables, global scope]
 	}
 
-	// 解析和求值主方法
+	/**
+	 * Parses and evaluates a JavaScript expression.
+	 * @param {string} expression - The JavaScript expression to evaluate
+	 * @returns {*} The result of the evaluation
+	 */
 	evaluate(expression) {
 		const ast = acorn.parse(expression, { ecmaVersion: "latest" });
 
-		// 从根节点开始递归求值
+		// Start recursive evaluation from the root node
 		return this.execute(ast.body);
 	}
 
-	// 处理 AST body 节点
+	/**
+	 * Executes an array of AST body nodes sequentially.
+	 * @private
+	 * @param {Array} body - Array of AST nodes to execute
+	 * @returns {*} The result of the last executed node
+	 */
 	execute(body) {
 		let result;
 		for (const node of body) {
@@ -129,7 +152,12 @@ export class Evaluator {
 		return result;
 	}
 
-	// 递归访问 AST 节点
+	/**
+	 * Visits an AST node and delegates to the appropriate handler based on node type.
+	 * @private
+	 * @param {Object} node - The AST node to visit
+	 * @returns {*} The result of visiting the node
+	 */
 	visit(node) {
 		switch (node.type) {
 			case "ExpressionStatement": {
@@ -195,7 +223,10 @@ export class Evaluator {
 		}
 	}
 
-	// 处理二元表达式
+	/**
+	 * Handles binary expressions (arithmetic and comparison operations).
+	 * @private
+	 */
 	handleBinaryExpression(node) {
 		switch (node.operator) {
 			case "+": {
@@ -211,11 +242,13 @@ export class Evaluator {
 				return this.visit(node.left) ** this.visit(node.right);
 			}
 			case "/": {
+				const left = this.visit(node.left);
 				const right = this.visit(node.right);
 				if (right === 0) throw new Error("Division by zero");
-				return this.visit(node.left) / right;
+				return left / right;
 			}
 			case "==": {
+				// Intentionally using loose equality as per JavaScript semantics
 				// biome-ignore lint/suspicious/noDoubleEquals: <explanation>
 				return this.visit(node.left) == this.visit(node.right);
 			}
@@ -223,6 +256,7 @@ export class Evaluator {
 				return this.visit(node.left) === this.visit(node.right);
 			}
 			case "!=": {
+				// Intentionally using loose inequality as per JavaScript semantics
 				// biome-ignore lint/suspicious/noDoubleEquals: <explanation>
 				return this.visit(node.left) != this.visit(node.right);
 			}
@@ -269,7 +303,10 @@ export class Evaluator {
 		}
 	}
 
-	// 处理逻辑表达式
+	/**
+	 * Handles logical expressions (&&, ||, ??).
+	 * @private
+	 */
 	handleLogicalExpression(node) {
 		switch (node.operator) {
 			case "&&": {
@@ -289,7 +326,10 @@ export class Evaluator {
 		}
 	}
 
-	// 处理一元表达式
+	/**
+	 * Handles unary expressions (-, +, !, ~, typeof, void).
+	 * @private
+	 */
 	handleUnaryExpression(node) {
 		switch (node.operator) {
 			case "-": {
@@ -320,7 +360,10 @@ export class Evaluator {
 		}
 	}
 
-	// 处理变量标识符
+	/**
+	 * Handles identifier (variable) lookups in the scope chain.
+	 * @private
+	 */
 	handleIdentifier(node) {
 		const name = node.name;
 		for (const scope of this.scopes) {
@@ -332,7 +375,10 @@ export class Evaluator {
 		throw new ReferenceError(`${name} is not defined`);
 	}
 
-	// 处理成员表达式
+	/**
+	 * Handles member expressions (property access like obj.prop or obj[prop]).
+	 * @private
+	 */
 	handleMemberExpression(node) {
 		const object = this.visit(node.object);
 		const property = node.property.type === "Identifier" && !node.computed ? node.property.name : this.visit(node.property);
@@ -345,7 +391,7 @@ export class Evaluator {
 			throw new TypeError(`Cannot read property '${property}' of ${object}`);
 		}
 
-		// 实例上的属性优先
+		// Check for own properties first (instance properties take precedence)
 		if (Object.hasOwn(object, property)) {
 			return object[property];
 		}
@@ -357,14 +403,17 @@ export class Evaluator {
 		}
 
 		if (typeof prototypeValue === "function") {
-			// 原型上的方法绑定到实例上
+			// Bind prototype methods to the instance
 			return prototypeValue.bind(object);
 		}
 
 		return prototypeValue;
 	}
 
-	// 处理对象表达式
+	/**
+	 * Handles object literal expressions.
+	 * @private
+	 */
 	handleObjectExpression(node) {
 		const obj = {};
 		for (const prop of node.properties) {
@@ -375,12 +424,18 @@ export class Evaluator {
 		return obj;
 	}
 
-	// 处理数组表达式
+	/**
+	 * Handles array literal expressions.
+	 * @private
+	 */
 	handleArrayExpression(node) {
 		return node.elements.map((element) => this.visit(element));
 	}
 
-	// 处理箭头函数表达式
+	/**
+	 * Handles arrow function expressions.
+	 * @private
+	 */
 	handleArrowFunctionExpression(node) {
 		return (...args) => {
 			const newScope = {};
@@ -394,9 +449,12 @@ export class Evaluator {
 		};
 	}
 
-	// 处理函数调用表达式
+	/**
+	 * Handles function call expressions, including optional chaining.
+	 * @private
+	 */
 	handleCallExpression(node) {
-		const calledString = this._getNodeString(node.callee);
+		const calledString = this.getNodeString(node.callee);
 
 		const func = this.visit(node.callee);
 
@@ -413,6 +471,10 @@ export class Evaluator {
 		return func(...args);
 	}
 
+	/**
+	 * Handles template literal expressions.
+	 * @private
+	 */
 	handleTemplateLiteral(node) {
 		return node.quasis
 			.concat(node.expressions)
@@ -430,7 +492,13 @@ export class Evaluator {
 			.join("");
 	}
 
-	_getNodeString(node) {
+	/**
+	 * Converts an AST node to a human-readable string representation for error messages.
+	 * @private
+	 * @param {Object} node - The AST node to convert
+	 * @returns {string|null} A string representation of the node, or null if not supported
+	 */
+	getNodeString(node) {
 		switch (node.type) {
 			case "Identifier": {
 				return node.name;
@@ -445,12 +513,12 @@ export class Evaluator {
 				return "(object)";
 			}
 			case "MemberExpression": {
-				let accessor = this._getNodeString(node.object);
+				let accessor = this.getNodeString(node.object);
 
 				if (node.computed) {
-					accessor += `[${this._getNodeString(node.property)}]`;
+					accessor += `[${this.getNodeString(node.property)}]`;
 				} else {
-					accessor += `.${this._getNodeString(node.property)}`;
+					accessor += `.${this.getNodeString(node.property)}`;
 				}
 
 				return accessor;
