@@ -1,17 +1,35 @@
-### 一个类似 javascript 的求值器，支持表达式和模板字符串
+# evaluator.js
 
-使用 AST 解析表达式，支持部分 javascript 语法，支持自定义函数和变量
+[![Badge](https://img.shields.io/badge/link-996.icu-%23FF4D5B.svg?style=flat-square)](https://996.icu/#/en_US)
+[![LICENSE](https://img.shields.io/badge/license-Anti%20996-blue.svg?style=flat-square)](https://github.com/996icu/996.ICU/blob/master/LICENSE)
+![Node](https://img.shields.io/badge/node-%3E=14-blue.svg?style=flat-square)
+[![npm version](https://badge.fury.io/js/evaluator.js.svg)](https://badge.fury.io/js/evaluator.js)
 
-#### Usage
+A tiny and fast JavaScript expression evaluator.
+
+## Installation
+
+```bash
+npm install evaluator.js --save
+```
+
+## Usage
 
 ```js
-import { evaluatorExpression, evaluatorTemplate } from "evaluator";
+import { evaluatorExpression, evaluatorTemplate } from "evaluator.js";
 
-evaluatorExpression("1 + 1"); // 2
-evaluatorExpression("a > b", { a: 1, b: 2 }); // false
-evaluatorExpression("a > 10 && b < 10", { a: 11, b: 8 }); // true
-evaluatorExpression("array.map(v => v + 1)", { array: [1, 2, 3] }); // [2, 3, 4]
+// Evaluate expression
+const expr = "a + b * c";
+const context = { a: 1, b: 2, c: 3 };
+const result = evaluatorExpression(expr, context);
+console.log(result); // Output: 7
 
-const context = { name: "world" };
-evaluatorTemplate("Hello ${{ name }}!", context); // Hello world!
+// Evaluate template
+const template = "The result of {{ a }} + {{ b }} * {{ c }} is {{ a + b * c }}.";
+const templateResult = evaluatorTemplate(template, context);
+console.log(templateResult); // Output: "The result of 1 + 2 * 3 is 7."
 ```
+
+## License
+
+The [Anti 996 License](LICENSE)
