@@ -78,3 +78,137 @@ describe("evaluatorTemplate - 模版字面量", () => {
 		assert.equal(decodeURIComponent(outputURL.searchParams.get("redirect")), "https://example.com?folderName=目录名");
 	});
 });
+
+// 测试多个表达式
+test("evaluatorTemplate - 多个表达式", () => {
+	const TEMPLATE = "${{ a }} + ${{ b }} = ${{ a + b }}";
+	const output = evaluatorTemplate(TEMPLATE, { a: 10, b: 20 });
+	assert.equal(output, "10 + 20 = 30");
+});
+
+// 测试空表达式
+test("evaluatorTemplate - 空模板", () => {
+	const TEMPLATE = "Hello World";
+	const output = evaluatorTemplate(TEMPLATE);
+	assert.equal(output, "Hello World");
+});
+
+// 测试多种类型的值
+test("evaluatorTemplate - 不同类型的值", () => {
+	const TEMPLATE = "String: ${{ str }}, Number: ${{ num }}, Boolean: ${{ bool }}, Null: ${{ nullVal }}, Array: ${{ arr }}";
+	const output = evaluatorTemplate(TEMPLATE, { 
+		str: "hello", 
+		num: 42, 
+		bool: true, 
+		nullVal: null,
+		arr: [1, 2, 3]
+	});
+	assert.equal(output, "String: hello, Number: 42, Boolean: true, Null: null, Array: 1,2,3");
+});
+
+// 测试对象表达式
+test("evaluatorTemplate - 对象表达式", () => {
+	const TEMPLATE = "${{ ({ a: 1, b: 2 }) }}";
+	const output = evaluatorTemplate(TEMPLATE);
+	assert.equal(output, "[object Object]");
+});
+
+// 测试数组方法
+test("evaluatorTemplate - 数组方法", () => {
+	const TEMPLATE = "${{ [1, 2, 3].map(x => x * 2).join(', ') }}";
+	const output = evaluatorTemplate(TEMPLATE);
+	assert.equal(output, "2, 4, 6");
+});
+
+// 测试三元表达式
+test("evaluatorTemplate - 三元表达式", () => {
+	const TEMPLATE = "${{ score >= 60 ? 'Pass' : 'Fail' }}";
+	const output1 = evaluatorTemplate(TEMPLATE, { score: 75 });
+	const output2 = evaluatorTemplate(TEMPLATE, { score: 45 });
+	assert.equal(output1, "Pass");
+	assert.equal(output2, "Fail");
+});
+
+// 测试Math函数
+test("evaluatorTemplate - Math函数", () => {
+	const TEMPLATE = "Max: ${{ Math.max(10, 20, 30) }}, Min: ${{ Math.min(10, 20, 30) }}";
+	const output = evaluatorTemplate(TEMPLATE);
+	assert.equal(output, "Max: 30, Min: 10");
+});
+
+// 测试字符串方法
+test("evaluatorTemplate - 字符串方法", () => {
+	const TEMPLATE = "${{ text.toUpperCase() }}";
+	const output = evaluatorTemplate(TEMPLATE, { text: "hello world" });
+	assert.equal(output, "HELLO WORLD");
+});
+
+// 测试可选链
+test("evaluatorTemplate - 可选链", () => {
+	const TEMPLATE = "${{ obj?.prop?.value ?? 'default' }}";
+	const output1 = evaluatorTemplate(TEMPLATE, { obj: { prop: { value: 42 } } });
+	const output2 = evaluatorTemplate(TEMPLATE, { obj: null });
+	assert.equal(output1, "42");
+	assert.equal(output2, "default");
+});
+
+// 测试逻辑运算
+test("evaluatorTemplate - 逻辑运算", () => {
+	const TEMPLATE = "${{ a && b || c }}";
+	const output = evaluatorTemplate(TEMPLATE, { a: true, b: false, c: true });
+	assert.equal(output, "true");
+});
+
+// 测试JSON操作
+test("evaluatorTemplate - JSON操作", () => {
+	const TEMPLATE = "${{ JSON.stringify({ x: 10, y: 20 }) }}";
+	const output = evaluatorTemplate(TEMPLATE);
+	assert.equal(output, '{"x":10,"y":20}');
+});
+
+// 测试Date
+test("evaluatorTemplate - Date", () => {
+	const TEMPLATE = "${{ new Date(0).getTime() }}";
+	const output = evaluatorTemplate(TEMPLATE);
+	assert.equal(output, "0");
+});
+
+// 测试错误处理 - 语法错误
+test("evaluatorTemplate - 语法错误", () => {
+	const TEMPLATE = "${{ 1 + }}";
+	assert.throws(() => evaluatorTemplate(TEMPLATE), /Unexpected token/);
+});
+
+// 测试错误处理 - 访问null属性
+test("evaluatorTemplate - 访问null属性错误", () => {
+	const TEMPLATE = "${{ obj.prop }}";
+	assert.throws(() => evaluatorTemplate(TEMPLATE, { obj: null }), /Cannot read property/);
+});
+
+// 测试多行模板
+test("evaluatorTemplate - 多行模板", () => {
+	const TEMPLATE = "Line 1: ${{ a }}\nLine 2: ${{ b }}\nLine 3: ${{ a + b }}";
+	const output = evaluatorTemplate(TEMPLATE, { a: 5, b: 10 });
+	assert.equal(output, "Line 1: 5\nLine 2: 10\nLine 3: 15");
+});
+
+// 测试特殊字符
+test("evaluatorTemplate - 特殊字符", () => {
+	const TEMPLATE = "Symbol: ${{ symbol }}";
+	const output = evaluatorTemplate(TEMPLATE, { symbol: "$" });
+	assert.equal(output, "Symbol: $");
+});
+
+// 测试嵌套括号
+test("evaluatorTemplate - 嵌套括号", () => {
+	const TEMPLATE = "${{ ((a + b) * (c - d)) }}";
+	const output = evaluatorTemplate(TEMPLATE, { a: 1, b: 2, c: 10, d: 5 });
+	assert.equal(output, "15");
+});
+
+// 测试箭头函数
+test("evaluatorTemplate - 箭头函数", () => {
+	const TEMPLATE = "${{ ((x) => x * 2)(5) }}";
+	const output = evaluatorTemplate(TEMPLATE);
+	assert.equal(output, "10");
+});
