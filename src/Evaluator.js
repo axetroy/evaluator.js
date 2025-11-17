@@ -1,5 +1,16 @@
 import * as acorn from "acorn";
 
+// Error message constants for better maintainability
+const ERROR_MESSAGES = {
+	DIVISION_BY_ZERO: "Division by zero",
+	DELETE_NOT_SUPPORTED: "Delete operator is mutable and not supported",
+	MUTABLE_METHOD: "Cannot call mutable prototype method",
+	NEW_FUNCTION_NOT_ALLOWED: "Cannot use new with Function constructor",
+	NOT_A_FUNCTION: "is not a function",
+	PROPERTY_READ_ERROR: "Cannot read property",
+	VARIABLE_NOT_DEFINED: "is not defined",
+};
+
 // List of TypedArray constructors available in the environment
 const typeArrayConstructors = [
 	Int8Array,
@@ -14,6 +25,49 @@ const typeArrayConstructors = [
 	globalThis.BigInt64Array,
 	globalThis.BigUint64Array,
 ].filter(Boolean);
+
+// Shared global scope object to avoid recreation on each Evaluator instantiation
+const GLOBAL_SCOPE = Object.assign(Object.create(null), {
+	Infinity,
+	null: null,
+	undefined,
+	NaN: Number.NaN,
+	isNaN: Number.isNaN,
+	isFinite: Number.isFinite,
+	parseFloat: Number.parseFloat,
+	parseInt: Number.parseInt,
+	encodeURI: globalThis.encodeURI,
+	encodeURIComponent: globalThis.encodeURIComponent,
+	decodeURI: globalThis.decodeURI,
+	decodeURIComponent: globalThis.decodeURIComponent,
+	Number,
+	String,
+	Boolean,
+	BigInt: globalThis.BigInt,
+	Symbol: globalThis.Symbol,
+	Object,
+	Array,
+	Set,
+	WeakSet,
+	Map,
+	WeakMap,
+	Math,
+	JSON,
+	Date,
+	RegExp,
+	Error,
+	EvalError,
+	RangeError,
+	ReferenceError,
+	SyntaxError,
+	TypeError,
+	URIError,
+	Promise,
+	...typeArrayConstructors.reduce((acc, obj) => {
+		acc[obj.name] = obj;
+		return acc;
+	}, {}),
+});
 
 // Set of methods that mutate their objects and should be blocked for safety
 const mutableMethods = new Set([
@@ -75,61 +129,33 @@ const mutableMethods = new Set([
 /**
  * A JavaScript expression evaluator that safely evaluates expressions within a sandboxed environment.
  * Supports various JavaScript features including arithmetic, logical operations, functions, and more.
+ * 
+ * Security features:
+ * - Blocks mutable methods to prevent side effects
+ * - No access to eval() or Function() constructor
+ * - Sandboxed scope with limited global objects
+ * 
+ * @example
+ * const evaluator = new Evaluator({ x: 10, y: 20 });
+ * evaluator.evaluate('x + y') // returns 30
  */
 export class Evaluator {
 	/**
-	 * Creates a new Evaluator instance.
+	 * Creates a new Evaluator instance with a custom variable context.
+	 * The scope hierarchy is: user variables -> global scope
 	 * @param {Object} [variables={}] - An optional object containing variables to make available in the evaluation context
 	 */
 	constructor(variables = {}) {
-		const globalScope = Object.assign(Object.create(null), {
-			Infinity,
-			null: null,
-			undefined,
-			NaN: Number.NaN,
-			isNaN: Number.isNaN,
-			isFinite: Number.isFinite,
-			parseFloat: Number.parseFloat,
-			parseInt: Number.parseInt,
-			encodeURI: globalThis.encodeURI,
-			encodeURIComponent: globalThis.encodeURIComponent,
-			decodeURI: globalThis.decodeURI,
-			decodeURIComponent: globalThis.decodeURIComponent,
-			Number,
-			String,
-			Boolean,
-			BigInt: globalThis.BigInt,
-			Symbol: globalThis.Symbol,
-			Object,
-			Array,
-			Set,
-			WeakSet,
-			Map,
-			WeakMap,
-			Math,
-			JSON,
-			Date,
-			RegExp,
-			Error,
-			EvalError,
-			RangeError,
-			ReferenceError,
-			SyntaxError,
-			TypeError,
-			URIError,
-			Promise,
-			...typeArrayConstructors.reduce((acc, obj) => {
-				acc[obj.name] = obj;
-				return acc;
-			}, {}),
-		});
-		this.scopes = [variables, globalScope]; // Scope stack: [user variables, global scope]
+		this.scopes = [variables, GLOBAL_SCOPE]; // Scope stack: [user variables, global scope]
 	}
 
 	/**
-	 * Parses and evaluates a JavaScript expression.
+	 * Parses and evaluates a JavaScript expression using acorn parser.
 	 * @param {string} expression - The JavaScript expression to evaluate
 	 * @returns {*} The result of the evaluation
+	 * @throws {SyntaxError} If the expression has invalid syntax
+	 * @throws {ReferenceError} If referencing undefined variables
+	 * @throws {TypeError} If performing invalid operations
 	 */
 	evaluate(expression) {
 		const ast = acorn.parse(expression, { ecmaVersion: "latest" });
@@ -202,7 +228,7 @@ export class Evaluator {
 				}
 
 				if (node.callee.name === "Function") {
-					throw new Error("Cannot use new with Function constructor");
+					throw new Error(ERROR_MESSAGES.NEW_FUNCTION_NOT_ALLOWED);
 				}
 
 				const Constructor = this.visit(node.callee);
@@ -244,7 +270,7 @@ export class Evaluator {
 			case "/": {
 				const left = this.visit(node.left);
 				const right = this.visit(node.right);
-				if (right === 0) throw new Error("Division by zero");
+				if (right === 0) throw new Error(ERROR_MESSAGES.DIVISION_BY_ZERO);
 				return left / right;
 			}
 			case "==": {
@@ -276,7 +302,10 @@ export class Evaluator {
 				return this.visit(node.left) <= this.visit(node.right);
 			}
 			case "%": {
-				return this.visit(node.left) % this.visit(node.right);
+				const left = this.visit(node.left);
+				const right = this.visit(node.right);
+				if (right === 0) throw new Error(ERROR_MESSAGES.DIVISION_BY_ZERO);
+				return left % right;
 			}
 			// Bitwise operators
 			case "&": {
@@ -305,19 +334,21 @@ export class Evaluator {
 
 	/**
 	 * Handles logical expressions (&&, ||, ??).
+	 * Implements proper short-circuit evaluation for performance.
 	 * @private
 	 */
 	handleLogicalExpression(node) {
 		switch (node.operator) {
 			case "&&": {
-				return this.visit(node.left) && this.visit(node.right);
+				const left = this.visit(node.left);
+				return left ? this.visit(node.right) : left;
 			}
 			case "||": {
-				return this.visit(node.left) || this.visit(node.right);
+				const left = this.visit(node.left);
+				return left ? left : this.visit(node.right);
 			}
 			case "??": {
 				const left = this.visit(node.left);
-
 				return left !== null && left !== undefined ? left : this.visit(node.right);
 			}
 			default: {
@@ -352,7 +383,7 @@ export class Evaluator {
 				return void this.visit(node.argument);
 			}
 			case "delete": {
-				throw new Error("Delete operator is mutable and not supported");
+				throw new Error(ERROR_MESSAGES.DELETE_NOT_SUPPORTED);
 			}
 			default: {
 				throw new Error(`Unsupported unary operator: ${node.operator}`);
@@ -372,7 +403,7 @@ export class Evaluator {
 			}
 		}
 
-		throw new ReferenceError(`${name} is not defined`);
+		throw new ReferenceError(`${name} ${ERROR_MESSAGES.VARIABLE_NOT_DEFINED}`);
 	}
 
 	/**
@@ -381,14 +412,17 @@ export class Evaluator {
 	 */
 	handleMemberExpression(node) {
 		const object = this.visit(node.object);
-		const property = node.property.type === "Identifier" && !node.computed ? node.property.name : this.visit(node.property);
+		
+		// Determine property name: either identifier name or computed value
+		const isStaticProperty = node.property.type === "Identifier" && !node.computed;
+		const property = isStaticProperty ? node.property.name : this.visit(node.property);
 
 		if (object === null || object === undefined) {
 			// optional chaining
 			if (node.optional) {
 				return void 0;
 			}
-			throw new TypeError(`Cannot read property '${property}' of ${object}`);
+			throw new TypeError(`${ERROR_MESSAGES.PROPERTY_READ_ERROR} '${property}' of ${object}`);
 		}
 
 		// Check for own properties first (instance properties take precedence)
@@ -399,7 +433,7 @@ export class Evaluator {
 		const prototypeValue = object[property];
 
 		if (mutableMethods.has(prototypeValue)) {
-			throw new Error(`Cannot call mutable prototype method: ${property}`);
+			throw new Error(`${ERROR_MESSAGES.MUTABLE_METHOD}: ${property}`);
 		}
 
 		if (typeof prototypeValue === "function") {
@@ -434,14 +468,20 @@ export class Evaluator {
 
 	/**
 	 * Handles arrow function expressions.
+	 * Creates a closure that captures the current scope and executes the function body
+	 * with parameters bound to a new scope.
 	 * @private
 	 */
 	handleArrowFunctionExpression(node) {
 		return (...args) => {
+			// Create new scope with parameters bound to arguments
 			const newScope = {};
-			for (const [index, param] of node.params.entries()) {
-				newScope[param.name] = args[index];
+			const paramCount = node.params.length;
+			for (let i = 0; i < paramCount; i++) {
+				newScope[node.params[i].name] = args[i];
 			}
+			
+			// Push new scope, evaluate body, then pop scope
 			this.scopes.unshift(newScope);
 			const result = this.visit(node.body);
 			this.scopes.shift();
@@ -463,7 +503,7 @@ export class Evaluator {
 			if ((func === undefined || func === null) && isOptional) {
 				return void 0;
 			}
-			throw new TypeError(`${calledString} is not a function`);
+			throw new TypeError(`${calledString} ${ERROR_MESSAGES.NOT_A_FUNCTION}`);
 		}
 
 		const args = node.arguments.map((arg) => this.visit(arg));
@@ -473,23 +513,21 @@ export class Evaluator {
 
 	/**
 	 * Handles template literal expressions.
+	 * More efficient implementation that interleaves quasis and expressions without sorting.
 	 * @private
 	 */
 	handleTemplateLiteral(node) {
-		return node.quasis
-			.concat(node.expressions)
-			.filter(Boolean)
-			.sort((a, b) => {
-				return a.start - b.start;
-			})
-			.map((node) => {
-				if (node.type === "TemplateElement") {
-					return node.value.raw;
-				}
-
-				return this.visit(node);
-			})
-			.join("");
+		let result = "";
+		const expressionCount = node.expressions.length;
+		
+		for (let i = 0; i < node.quasis.length; i++) {
+			result += node.quasis[i].value.raw;
+			if (i < expressionCount) {
+				result += this.visit(node.expressions[i]);
+			}
+		}
+		
+		return result;
 	}
 
 	/**
@@ -513,15 +551,13 @@ export class Evaluator {
 				return "(object)";
 			}
 			case "MemberExpression": {
-				let accessor = this.getNodeString(node.object);
-
+				const objectStr = this.getNodeString(node.object);
+				const propertyStr = this.getNodeString(node.property);
+				
 				if (node.computed) {
-					accessor += `[${this.getNodeString(node.property)}]`;
-				} else {
-					accessor += `.${this.getNodeString(node.property)}`;
+					return `${objectStr}[${propertyStr}]`;
 				}
-
-				return accessor;
+				return `${objectStr}.${propertyStr}`;
 			}
 			default: {
 				return null;
