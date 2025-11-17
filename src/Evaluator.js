@@ -15,6 +15,49 @@ const typeArrayConstructors = [
 	globalThis.BigUint64Array,
 ].filter(Boolean);
 
+// Shared global scope object to avoid recreation on each Evaluator instantiation
+const GLOBAL_SCOPE = Object.assign(Object.create(null), {
+	Infinity,
+	null: null,
+	undefined,
+	NaN: Number.NaN,
+	isNaN: Number.isNaN,
+	isFinite: Number.isFinite,
+	parseFloat: Number.parseFloat,
+	parseInt: Number.parseInt,
+	encodeURI: globalThis.encodeURI,
+	encodeURIComponent: globalThis.encodeURIComponent,
+	decodeURI: globalThis.decodeURI,
+	decodeURIComponent: globalThis.decodeURIComponent,
+	Number,
+	String,
+	Boolean,
+	BigInt: globalThis.BigInt,
+	Symbol: globalThis.Symbol,
+	Object,
+	Array,
+	Set,
+	WeakSet,
+	Map,
+	WeakMap,
+	Math,
+	JSON,
+	Date,
+	RegExp,
+	Error,
+	EvalError,
+	RangeError,
+	ReferenceError,
+	SyntaxError,
+	TypeError,
+	URIError,
+	Promise,
+	...typeArrayConstructors.reduce((acc, obj) => {
+		acc[obj.name] = obj;
+		return acc;
+	}, {}),
+});
+
 // Set of methods that mutate their objects and should be blocked for safety
 const mutableMethods = new Set([
 	Array.prototype.push,
@@ -82,48 +125,7 @@ export class Evaluator {
 	 * @param {Object} [variables={}] - An optional object containing variables to make available in the evaluation context
 	 */
 	constructor(variables = {}) {
-		const globalScope = Object.assign(Object.create(null), {
-			Infinity,
-			null: null,
-			undefined,
-			NaN: Number.NaN,
-			isNaN: Number.isNaN,
-			isFinite: Number.isFinite,
-			parseFloat: Number.parseFloat,
-			parseInt: Number.parseInt,
-			encodeURI: globalThis.encodeURI,
-			encodeURIComponent: globalThis.encodeURIComponent,
-			decodeURI: globalThis.decodeURI,
-			decodeURIComponent: globalThis.decodeURIComponent,
-			Number,
-			String,
-			Boolean,
-			BigInt: globalThis.BigInt,
-			Symbol: globalThis.Symbol,
-			Object,
-			Array,
-			Set,
-			WeakSet,
-			Map,
-			WeakMap,
-			Math,
-			JSON,
-			Date,
-			RegExp,
-			Error,
-			EvalError,
-			RangeError,
-			ReferenceError,
-			SyntaxError,
-			TypeError,
-			URIError,
-			Promise,
-			...typeArrayConstructors.reduce((acc, obj) => {
-				acc[obj.name] = obj;
-				return acc;
-			}, {}),
-		});
-		this.scopes = [variables, globalScope]; // Scope stack: [user variables, global scope]
+		this.scopes = [variables, GLOBAL_SCOPE]; // Scope stack: [user variables, global scope]
 	}
 
 	/**
@@ -305,19 +307,21 @@ export class Evaluator {
 
 	/**
 	 * Handles logical expressions (&&, ||, ??).
+	 * Implements proper short-circuit evaluation for performance.
 	 * @private
 	 */
 	handleLogicalExpression(node) {
 		switch (node.operator) {
 			case "&&": {
-				return this.visit(node.left) && this.visit(node.right);
+				const left = this.visit(node.left);
+				return left ? this.visit(node.right) : left;
 			}
 			case "||": {
-				return this.visit(node.left) || this.visit(node.right);
+				const left = this.visit(node.left);
+				return left ? left : this.visit(node.right);
 			}
 			case "??": {
 				const left = this.visit(node.left);
-
 				return left !== null && left !== undefined ? left : this.visit(node.right);
 			}
 			default: {
@@ -381,7 +385,10 @@ export class Evaluator {
 	 */
 	handleMemberExpression(node) {
 		const object = this.visit(node.object);
-		const property = node.property.type === "Identifier" && !node.computed ? node.property.name : this.visit(node.property);
+		
+		// Determine property name: either identifier name or computed value
+		const isStaticProperty = node.property.type === "Identifier" && !node.computed;
+		const property = isStaticProperty ? node.property.name : this.visit(node.property);
 
 		if (object === null || object === undefined) {
 			// optional chaining
@@ -473,23 +480,21 @@ export class Evaluator {
 
 	/**
 	 * Handles template literal expressions.
+	 * More efficient implementation that interleaves quasis and expressions without sorting.
 	 * @private
 	 */
 	handleTemplateLiteral(node) {
-		return node.quasis
-			.concat(node.expressions)
-			.filter(Boolean)
-			.sort((a, b) => {
-				return a.start - b.start;
-			})
-			.map((node) => {
-				if (node.type === "TemplateElement") {
-					return node.value.raw;
-				}
-
-				return this.visit(node);
-			})
-			.join("");
+		let result = "";
+		const expressionCount = node.expressions.length;
+		
+		for (let i = 0; i < node.quasis.length; i++) {
+			result += node.quasis[i].value.raw;
+			if (i < expressionCount) {
+				result += this.visit(node.expressions[i]);
+			}
+		}
+		
+		return result;
 	}
 
 	/**
@@ -513,15 +518,13 @@ export class Evaluator {
 				return "(object)";
 			}
 			case "MemberExpression": {
-				let accessor = this.getNodeString(node.object);
-
+				const objectStr = this.getNodeString(node.object);
+				const propertyStr = this.getNodeString(node.property);
+				
 				if (node.computed) {
-					accessor += `[${this.getNodeString(node.property)}]`;
-				} else {
-					accessor += `.${this.getNodeString(node.property)}`;
+					return `${objectStr}[${propertyStr}]`;
 				}
-
-				return accessor;
+				return `${objectStr}.${propertyStr}`;
 			}
 			default: {
 				return null;
