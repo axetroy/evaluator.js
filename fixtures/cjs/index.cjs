@@ -1,3 +1,3 @@
-const { evaluatorExpression, evaluatorTemplate } = require("sql-builder.js");
+const { evaluatorExpression, evaluatorTemplate } = require("ecma-evaluator");
 
 console.log(evaluatorExpression, evaluatorTemplate);

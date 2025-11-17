@@ -1,3 +1,3 @@
-import { evaluatorExpression, evaluatorTemplate } from "sql-builder.js";
+import { evaluatorExpression, evaluatorTemplate } from "ecma-evaluator";
 
 console.log(evaluatorExpression, evaluatorTemplate);

@@ -10,6 +10,6 @@
   "license": "ISC",
   "description": "",
   "dependencies": {
-    "sql-builder.js": "../../"
+    "ecma-evaluator": "../../"
   }
 }
