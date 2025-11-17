@@ -129,10 +129,20 @@ const mutableMethods = new Set([
 /**
  * A JavaScript expression evaluator that safely evaluates expressions within a sandboxed environment.
  * Supports various JavaScript features including arithmetic, logical operations, functions, and more.
+ * 
+ * Security features:
+ * - Blocks mutable methods to prevent side effects
+ * - No access to eval() or Function() constructor
+ * - Sandboxed scope with limited global objects
+ * 
+ * @example
+ * const evaluator = new Evaluator({ x: 10, y: 20 });
+ * evaluator.evaluate('x + y') // returns 30
  */
 export class Evaluator {
 	/**
-	 * Creates a new Evaluator instance.
+	 * Creates a new Evaluator instance with a custom variable context.
+	 * The scope hierarchy is: user variables -> global scope
 	 * @param {Object} [variables={}] - An optional object containing variables to make available in the evaluation context
 	 */
 	constructor(variables = {}) {
@@ -140,9 +150,12 @@ export class Evaluator {
 	}
 
 	/**
-	 * Parses and evaluates a JavaScript expression.
+	 * Parses and evaluates a JavaScript expression using acorn parser.
 	 * @param {string} expression - The JavaScript expression to evaluate
 	 * @returns {*} The result of the evaluation
+	 * @throws {SyntaxError} If the expression has invalid syntax
+	 * @throws {ReferenceError} If referencing undefined variables
+	 * @throws {TypeError} If performing invalid operations
 	 */
 	evaluate(expression) {
 		const ast = acorn.parse(expression, { ecmaVersion: "latest" });
@@ -455,14 +468,20 @@ export class Evaluator {
 
 	/**
 	 * Handles arrow function expressions.
+	 * Creates a closure that captures the current scope and executes the function body
+	 * with parameters bound to a new scope.
 	 * @private
 	 */
 	handleArrowFunctionExpression(node) {
 		return (...args) => {
+			// Create new scope with parameters bound to arguments
 			const newScope = {};
-			for (const [index, param] of node.params.entries()) {
-				newScope[param.name] = args[index];
+			const paramCount = node.params.length;
+			for (let i = 0; i < paramCount; i++) {
+				newScope[node.params[i].name] = args[i];
 			}
+			
+			// Push new scope, evaluate body, then pop scope
 			this.scopes.unshift(newScope);
 			const result = this.visit(node.body);
 			this.scopes.shift();
