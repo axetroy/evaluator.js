@@ -1,14 +1,14 @@
 import { Evaluator } from "./Evaluator.js";
 
 /**
- * Regular expression to match ${{ expression }} template patterns.
- * Matches: ${{ ... }} where ... can contain nested braces like { }
+ * Regular expression to match template patterns.
+ * Supports both `{{ ... }}` and legacy `${{ ... }}` where ... can contain single-level braces `{ }`.
  * Pattern explanation:
- * - \$\{\{ - matches literal ${{
- * - ((?:[^{}]|{[^{}]*})+) - captures expression content, allowing single level of braces
- * - \}\} - matches literal }}
+ * - \$?\{\{ - optional literal `$` before `{{` to support legacy form
+ * - ((?:[^{}]|{[^{}]*})+) - captures expression content, allowing a single level of braces
+ * - \}\} - matches literal `}}`
  */
-const TEMPLATE_EXPRESSION_REGEX = /\$\{\{((?:[^{}]|{[^{}]*})+)\}\}/g;
+const TEMPLATE_EXPRESSION_REGEX = /\$?\{\{((?:[^{}]|{[^{}]*})+)\}\}/g;
 
 /**
  * Evaluates a JavaScript expression with an optional context.
@@ -30,11 +30,11 @@ export function evaluatorExpression(expression, context) {
  * @param {Object} [context] - Optional context object with variables to use in expressions
  * @returns {string} The template with all expressions evaluated and replaced
  * @example
- * evaluatorTemplate('Hello ${{ name }}!', { name: 'World' }) // returns 'Hello World!'
+ * evaluatorTemplate('Hello {{ name }}!', { name: 'World' }) // returns 'Hello World!'
  */
 export function evaluatorTemplate(template, context) {
 	const evaluator = new Evaluator(context);
-	
+
 	return template.replace(TEMPLATE_EXPRESSION_REGEX, (match, expression) => {
 		try {
 			const value = evaluator.evaluate(expression.trim());
