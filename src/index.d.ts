@@ -21,3 +21,8 @@ export declare function evaluatorExpression<T = unknown>(expr: string, context?:
  * ```
  */
 export declare function evaluatorTemplate(template: string, context?: unknown): string;
+
+/**
+ * Evaluator class for reusing the same context across multiple evaluations
+ */
+export { Evaluator } from "./Evaluator.js";

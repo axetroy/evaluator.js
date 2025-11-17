@@ -1,5 +1,8 @@
 import { Evaluator } from "./Evaluator.js";
 
+// Re-export Evaluator class for direct use
+export { Evaluator };
+
 /**
  * Regular expression to match ${{ expression }} template patterns.
  * Matches: ${{ ... }} where ... can contain nested braces like { }
