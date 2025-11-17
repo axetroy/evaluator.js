@@ -1,5 +1,16 @@
 import * as acorn from "acorn";
 
+// Error message constants for better maintainability
+const ERROR_MESSAGES = {
+	DIVISION_BY_ZERO: "Division by zero",
+	DELETE_NOT_SUPPORTED: "Delete operator is mutable and not supported",
+	MUTABLE_METHOD: "Cannot call mutable prototype method",
+	NEW_FUNCTION_NOT_ALLOWED: "Cannot use new with Function constructor",
+	NOT_A_FUNCTION: "is not a function",
+	PROPERTY_READ_ERROR: "Cannot read property",
+	VARIABLE_NOT_DEFINED: "is not defined",
+};
+
 // List of TypedArray constructors available in the environment
 const typeArrayConstructors = [
 	Int8Array,
@@ -204,7 +215,7 @@ export class Evaluator {
 				}
 
 				if (node.callee.name === "Function") {
-					throw new Error("Cannot use new with Function constructor");
+					throw new Error(ERROR_MESSAGES.NEW_FUNCTION_NOT_ALLOWED);
 				}
 
 				const Constructor = this.visit(node.callee);
@@ -246,7 +257,7 @@ export class Evaluator {
 			case "/": {
 				const left = this.visit(node.left);
 				const right = this.visit(node.right);
-				if (right === 0) throw new Error("Division by zero");
+				if (right === 0) throw new Error(ERROR_MESSAGES.DIVISION_BY_ZERO);
 				return left / right;
 			}
 			case "==": {
@@ -278,7 +289,10 @@ export class Evaluator {
 				return this.visit(node.left) <= this.visit(node.right);
 			}
 			case "%": {
-				return this.visit(node.left) % this.visit(node.right);
+				const left = this.visit(node.left);
+				const right = this.visit(node.right);
+				if (right === 0) throw new Error(ERROR_MESSAGES.DIVISION_BY_ZERO);
+				return left % right;
 			}
 			// Bitwise operators
 			case "&": {
@@ -356,7 +370,7 @@ export class Evaluator {
 				return void this.visit(node.argument);
 			}
 			case "delete": {
-				throw new Error("Delete operator is mutable and not supported");
+				throw new Error(ERROR_MESSAGES.DELETE_NOT_SUPPORTED);
 			}
 			default: {
 				throw new Error(`Unsupported unary operator: ${node.operator}`);
@@ -376,7 +390,7 @@ export class Evaluator {
 			}
 		}
 
-		throw new ReferenceError(`${name} is not defined`);
+		throw new ReferenceError(`${name} ${ERROR_MESSAGES.VARIABLE_NOT_DEFINED}`);
 	}
 
 	/**
@@ -395,7 +409,7 @@ export class Evaluator {
 			if (node.optional) {
 				return void 0;
 			}
-			throw new TypeError(`Cannot read property '${property}' of ${object}`);
+			throw new TypeError(`${ERROR_MESSAGES.PROPERTY_READ_ERROR} '${property}' of ${object}`);
 		}
 
 		// Check for own properties first (instance properties take precedence)
@@ -406,7 +420,7 @@ export class Evaluator {
 		const prototypeValue = object[property];
 
 		if (mutableMethods.has(prototypeValue)) {
-			throw new Error(`Cannot call mutable prototype method: ${property}`);
+			throw new Error(`${ERROR_MESSAGES.MUTABLE_METHOD}: ${property}`);
 		}
 
 		if (typeof prototypeValue === "function") {
@@ -470,7 +484,7 @@ export class Evaluator {
 			if ((func === undefined || func === null) && isOptional) {
 				return void 0;
 			}
-			throw new TypeError(`${calledString} is not a function`);
+			throw new TypeError(`${calledString} ${ERROR_MESSAGES.NOT_A_FUNCTION}`);
 		}
 
 		const args = node.arguments.map((arg) => this.visit(arg));
