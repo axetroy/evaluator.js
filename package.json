@@ -1,5 +1,5 @@
 {
-    "name": "evaluator.js",
+    "name": "ecma-evaluator",
     "version": "1.0.0",
     "private": false,
     "description": "A tiny and fast JavaScript expression evaluator.",
