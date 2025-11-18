@@ -67,11 +67,11 @@ test("Error handling", () => {
 
 	{
 		const evaluator = new Evaluator({ foo: {} });
-		assert.throws(() => evaluator.evaluate("foo.undefinedProperty()"), /foo\.undefinedProperty is not a function/);
-		assert.throws(() => evaluator.evaluate('foo["undefinedProperty"]()'), /foo\["undefinedProperty"\] is not a function/);
-		assert.throws(() => evaluator.evaluate("foo[1]()"), /foo\[1\] is not a function/);
-		assert.throws(() => evaluator.evaluate("foo[[1,2,3]]()"), /foo\[\[1,2,3\]\] is not a function/);
-		assert.throws(() => evaluator.evaluate("foo[{}]()"), /foo\[{}\] is not a function/);
+		assert.throws(() => evaluator.evaluate("foo.undefinedProperty()"), { message: "foo.undefinedProperty is not a function" });
+		assert.throws(() => evaluator.evaluate('foo["undefinedProperty"]()'), { message: 'foo["undefinedProperty"] is not a function' });
+		assert.throws(() => evaluator.evaluate("foo[1]()"), { message: "foo[1] is not a function" });
+		assert.throws(() => evaluator.evaluate("foo[[1,2,3]]()"), { message: "foo[[1,2,3]] is not a function" });
+		assert.throws(() => evaluator.evaluate("foo[{}]()"), { message: "foo[{}] is not a function" });
 	}
 });
 
@@ -661,6 +661,11 @@ test("Promise operations", () => {
 	// Note: Promise.resolve and Promise.reject may not work as expected in the evaluator
 	// because they need proper 'this' binding
 	assert.equal(evaluator.evaluate("new Promise((resolve) => resolve(42))") instanceof Promise, true);
+});
+
+// 测试 setTimeout('alert("Hi")', 1000 ) 不支持
+test("setTimeout with string argument not supported", () => {
+	assert.throws(() => evaluator.evaluate("setTimeout('alert(\"Hi\")', 1000 )"), { message: "setTimeout is not defined" });
 });
 
 describe("getNodeString", () => {
