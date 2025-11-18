@@ -1,5 +1,6 @@
 import * as acorn from "acorn";
 import globals from "globals";
+import { mutableMethods } from "./mutableMethods.js";
 
 // Error message constants for better maintainability
 const ERROR_MESSAGES = {
@@ -45,60 +46,11 @@ function createGlobalScope() {
 const getMutableMethods = (() => {
 	let MUTABLE_METHODS = null;
 
-	// --- lazy mutable methods set ---
-	const MUTABLE_METHOD_PATHS = [
-		"Array.prototype.push",
-		"Array.prototype.pop",
-		"Array.prototype.shift",
-		"Array.prototype.unshift",
-		"Array.prototype.splice",
-		"Array.prototype.reverse",
-		"Array.prototype.sort",
-		"Array.prototype.fill",
-		"Array.prototype.copyWithin",
-		"Object.freeze",
-		"Object.defineProperty",
-		"Object.defineProperties",
-		"Object.preventExtensions",
-		"Object.setPrototypeOf",
-		"Object.assign",
-		"Object.seal",
-		"Reflect.set",
-		"Reflect.defineProperty",
-		"Reflect.deleteProperty",
-		"Set.prototype.add",
-		"Set.prototype.delete",
-		"Set.prototype.clear",
-		"WeakSet.prototype.add",
-		"WeakSet.prototype.delete",
-		"Map.prototype.set",
-		"Map.prototype.delete",
-		"Map.prototype.clear",
-		"WeakMap.prototype.set",
-		"WeakMap.prototype.delete",
-		"Date.prototype.setMilliseconds",
-		"Date.prototype.setSeconds",
-		"Date.prototype.setUTCSeconds",
-		"Date.prototype.setMinutes",
-		"Date.prototype.setHours",
-		"Date.prototype.setMonth",
-		"Date.prototype.setDate",
-		"Date.prototype.setFullYear",
-		"Date.prototype.setUTCMinutes",
-		"Date.prototype.setUTCHours",
-		"Date.prototype.setUTCDate",
-		"Date.prototype.setUTCMonth",
-		"Date.prototype.setUTCFullYear",
-		"Date.prototype.setTime",
-		"Date.prototype.setYear",
-		"RegExp.prototype.compile",
-	];
-
 	return () => {
 		if (MUTABLE_METHODS) return MUTABLE_METHODS;
 
 		const set = new Set();
-		for (const path of MUTABLE_METHOD_PATHS) {
+		for (const path of mutableMethods) {
 			const [object, ...properties] = path.split(".");
 			let current = globalThis[object];
 			for (const prop of properties) {
