@@ -213,6 +213,13 @@ describe("evalTemplate 函数测试", () => {
 		const output = evalTemplate(TEMPLATE);
 		assert.equal(output, "10");
 	});
+
+	// 测试表达式中带有 }} 结束符号
+	test("evalTemplate - 表达式中带有 }} 符号", () => {
+		const TEMPLATE = "{{ 'This is a curly brace: }}' }}";
+		const output = evalTemplate(TEMPLATE);
+		assert.equal(output, "This is a curly brace: }}");
+	});
 });
 
 describe("evalExpression 函数测试", () => {

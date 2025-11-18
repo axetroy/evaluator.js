@@ -10,7 +10,6 @@ export type TemplateToken = {
 
 export interface TemplateParserOptions {
 	preserveWhitespace?: boolean;
-	includePositions?: boolean;
 	expressionStart?: string;
 	expressionEnd?: string;
 }
