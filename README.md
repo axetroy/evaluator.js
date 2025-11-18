@@ -16,17 +16,17 @@ npm install ecma-evaluator --save
 ## Usage
 
 ```js
-import { evaluatorExpression, evaluatorTemplate } from "ecma-evaluator";
+import { evalExpression, evalTemplate } from "ecma-evaluator";
 
 // Evaluate expression
 const expr = "a + b * c";
 const context = { a: 1, b: 2, c: 3 };
-const result = evaluatorExpression(expr, context);
+const result = evalExpression(expr, context);
 console.log(result); // Output: 7
 
 // Evaluate template
 const template = "The result of {{ a }} + {{ b }} * {{ c }} is {{ a + b * c }}.";
-const templateResult = evaluatorTemplate(template, context);
+const templateResult = evalTemplate(template, context);
 console.log(templateResult); // Output: "The result of 1 + 2 * 3 is 7."
 ```
 

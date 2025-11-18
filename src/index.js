@@ -7,9 +7,9 @@ import { TemplateParser } from "./TemplateParser.js";
  * @param {unknown} [context] - Optional context object with variables to use in the expression
  * @returns {*} The result of evaluating the expression
  * @example
- * evaluatorExpression('a + b', { a: 1, b: 2 }) // returns 3
+ * evalExpression('a + b', { a: 1, b: 2 }) // returns 3
  */
-export function evaluatorExpression(expression, context) {
+export function evalExpression(expression, context) {
 	return Evaluator.evaluate(expression, context);
 }
 
@@ -20,9 +20,9 @@ export function evaluatorExpression(expression, context) {
  * @param {Object} [context] - Optional context object with variables to use in expressions
  * @returns {string} The template with all expressions evaluated and replaced
  * @example
- * evaluatorTemplate('Hello {{ name }}!', { name: 'World' }) // returns 'Hello World!'
+ * evalTemplate('Hello {{ name }}!', { name: 'World' }) // returns 'Hello World!'
  */
-export function evaluatorTemplate(template, context) {
+export function evalTemplate(template, context) {
 	let result = "";
 
 	for (const token of TemplateParser.parse(template)) {

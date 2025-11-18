@@ -3,13 +3,13 @@
  * @param expr
  * @example
  * ```js
- * evaluatorExpression('1 + 1'); // 2
- * evaluatorExpression('a > b', { a: 1, b: 2 }); // false
- * evaluatorExpression('a > 10 && b < 10', { a: 11, b: 8 }); // true
- * evaluatorExpression('array.map(v => v + 1)', { array: [1, 2, 3] }) // [2, 3, 4]
+ * evalExpression('1 + 1'); // 2
+ * evalExpression('a > b', { a: 1, b: 2 }); // false
+ * evalExpression('a > 10 && b < 10', { a: 11, b: 8 }); // true
+ * evalExpression('array.map(v => v + 1)', { array: [1, 2, 3] }) // [2, 3, 4]
  * ```
  */
-export declare function evaluatorExpression<T = unknown>(expr: string, context?: unknown): T;
+export declare function evalExpression<T = unknown>(expr: string, context?: unknown): T;
 
 /**
  * 解析模板
@@ -17,7 +17,7 @@ export declare function evaluatorExpression<T = unknown>(expr: string, context?:
  * @example
  * ```js
  * const context = { name: "world" };
- * evaluatorTemplate("Hello ${{ name }}!", context); // Hello world!
+ * evalTemplate("Hello ${{ name }}!", context); // Hello world!
  * ```
  */
-export declare function evaluatorTemplate(template: string, context?: unknown): string;
+export declare function evalTemplate(template: string, context?: unknown): string;
