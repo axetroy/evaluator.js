@@ -374,9 +374,6 @@ evalExpression("new Function('return 1')");
 
 evalExpression("delete obj.prop", { obj: { prop: 1 } });
 // Error: Delete operator is mutable and not supported
-
-evalExpression("10 / 0");
-// Error: Division by zero
 ```
 
 ## Use Cases
