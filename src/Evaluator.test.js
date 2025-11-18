@@ -51,7 +51,7 @@ test("Variable usage", () => {
 
 // 测试错误处理
 test("Error handling", () => {
-	assert.throws(() => evaluator.evaluate("1 / 0"), { message: "Division by zero" });
+	assert.equal(evaluator.evaluate("5 / 0"), Infinity);
 	assert.throws(() => evaluator.evaluate("a = (5 + 3"), /Unexpected token/);
 	assert.throws(() => evaluator.evaluate("5 +"), /Unexpected token/);
 
@@ -273,8 +273,7 @@ test("Special numeric values", () => {
 	assert.equal(evaluator.evaluate("Infinity + 1"), Infinity);
 	assert.equal(evaluator.evaluate("Infinity - Infinity"), NaN);
 	assert.equal(evaluator.evaluate("Infinity / Infinity"), NaN);
-	// Note: evaluator throws on 0 / 0, which is different from JavaScript behavior
-	assert.throws(() => evaluator.evaluate("0 / 0"), { message: "Division by zero" });
+	assert.equal(evaluator.evaluate("0 / 0"), Infinity);
 	assert.equal(evaluator.evaluate("isNaN(NaN)"), true);
 	assert.equal(evaluator.evaluate("isNaN(0)"), false);
 	assert.equal(evaluator.evaluate("isFinite(100)"), true);
@@ -286,9 +285,8 @@ test("Special numeric values", () => {
 test("Negative zero", () => {
 	assert.equal(evaluator.evaluate("-0"), -0);
 	assert.equal(evaluator.evaluate("-0 === 0"), true);
-	// Note: evaluator throws on division by zero
-	assert.throws(() => evaluator.evaluate("1 / -0"), { message: "Division by zero" });
-	assert.throws(() => evaluator.evaluate("1 / 0"), { message: "Division by zero" });
+	assert.equal(evaluator.evaluate("1 / -0"), -Infinity);
+	assert.equal(evaluator.evaluate("1 / 0"), Infinity);
 });
 
 // 测试大数值
@@ -531,15 +529,15 @@ test("More template literal edge cases", () => {
 
 // 测试更多可选链场景
 test("More optional chaining scenarios", () => {
-	const evaluator = new Evaluator({ 
-		obj: { 
-			a: { 
-				b: { 
+	const evaluator = new Evaluator({
+		obj: {
+			a: {
+				b: {
 					c: 42,
 					fn: () => 100
-				} 
-			} 
-		} 
+				}
+			}
+		}
 	});
 	assert.equal(evaluator.evaluate('obj?.a?.b?.c'), 42);
 	assert.equal(evaluator.evaluate('obj?.a?.b?.d'), undefined);

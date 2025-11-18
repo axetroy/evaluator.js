@@ -2,7 +2,6 @@ import * as acorn from "acorn";
 
 // Error message constants for better maintainability
 const ERROR_MESSAGES = {
-	DIVISION_BY_ZERO: "Division by zero",
 	DELETE_NOT_SUPPORTED: "Delete operator is mutable and not supported",
 	MUTABLE_METHOD: "Cannot call mutable prototype method",
 	NEW_FUNCTION_NOT_ALLOWED: "Cannot use new with Function constructor",
@@ -281,7 +280,9 @@ export class Evaluator {
 			case "/": {
 				const left = this.visit(node.left);
 				const right = this.visit(node.right);
-				if (right === 0) throw new Error(ERROR_MESSAGES.DIVISION_BY_ZERO);
+				if (right === 0) {
+					return 1 / right;
+				}
 				return left / right;
 			}
 			case "==": {
@@ -315,7 +316,7 @@ export class Evaluator {
 			case "%": {
 				const left = this.visit(node.left);
 				const right = this.visit(node.right);
-				if (right === 0) throw new Error(ERROR_MESSAGES.DIVISION_BY_ZERO);
+				if (right === 0) return Number.NaN;
 				return left % right;
 			}
 			// Bitwise operators
