@@ -41,8 +41,18 @@
         "typescript": "^5.9.3"
     },
     "keywords": [
-        "sql",
-        "sql-builder"
+        "expression",
+        "evaluator",
+        "eval",
+        "expression-evaluator",
+        "template",
+        "template-engine",
+        "sandbox",
+        "safe-eval",
+        "javascript",
+        "ecmascript",
+        "parser",
+        "acorn"
     ],
     "homepage": "https://github.com/axetroy/ecma-evaluator#readme",
     "bugs": {
