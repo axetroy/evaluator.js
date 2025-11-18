@@ -11,11 +11,31 @@ class RspackDtsCopyPlugin {
 		const projectDir = compiler.context;
 
 		compiler.hooks.emit.tapPromise("RspackDtsCopyPlugin", async (compilation) => {
-			const target = path.join(projectDir, "src/index.d.ts");
+			const srcDir = path.join(projectDir, "src");
+			const dtsFiles = fs.readdirSync(srcDir, "utf8").filter((v) => v.endsWith(".d.ts"));
 
-			compilation.emitAsset("esm/index.d.mts", new compiler.webpack.sources.RawSource(await fs.promises.readFile(target, "utf8")));
+			const createSource = (filepath, isModule) => {
+				let content = fs.readFileSync(filepath, "utf8");
 
-			compilation.emitAsset("cjs/index.d.cts", new compiler.webpack.sources.RawSource(await fs.promises.readFile(target, "utf8")));
+				// TODO: 更加完善的处理方法应该是使用 AST 进行处理，而不是简单的正则替换
+				if (isModule) {
+					// 替换导入的模块路径为对应的模块类型，把 .js 的模块导入，替换成为 .mts
+					content = content.replace(/(from\s+['"].+?)\.js(['"])/g, "$1.mts$2");
+				} else {
+					// 替换导入的模块路径为对应的模块类型，把 .js 的模块导入，替换成为 .cts
+					content = content.replace(/(from\s+['"].+?)\.js(['"])/g, "$1.cts$2");
+				}
+
+				return new compiler.webpack.sources.RawSource(content);
+			};
+
+			for (const file of dtsFiles) {
+				const absolutePath = path.join(srcDir, file);
+				const filename = path.basename(file, ".d.ts");
+
+				compilation.emitAsset("esm/" + filename + ".d.mts", createSource(absolutePath));
+				compilation.emitAsset("cjs/" + filename + ".d.cts", createSource(absolutePath));
+			}
 		});
 	}
 }

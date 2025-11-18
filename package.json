@@ -35,7 +35,7 @@
     "author": "Axetroy <axetroy.dev@gmail.com>",
     "license": "SEE LICENSE IN LICENSE",
     "devDependencies": {
-        "@rslib/core": "^0.6.0",
+        "@rslib/core": "^0.18.0",
         "@types/node": "^22.14.1",
         "knip": "^5.53.0",
         "typescript": "^5.9.3"

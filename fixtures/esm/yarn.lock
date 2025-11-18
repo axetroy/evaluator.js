@@ -11,3 +11,9 @@ ecma-evaluator@../../:
   version "1.0.0"
   dependencies:
     acorn "^8.15.0"
+    globals "^16.5.0"
+
+globals@^16.5.0:
+  version "16.5.0"
+  resolved "https://registry.npmjs.org/globals/-/globals-16.5.0.tgz#ccf1594a437b97653b2be13ed4d8f5c9f850cac1"
+  integrity sha512-c/c15i26VrJ4IRt5Z89DnIzCGDn9EcebibhAOjw5ibqEHsE1wLUgkPn9RDmNcUKyU87GeaL633nyJ+pplFR2ZQ==
