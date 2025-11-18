@@ -57,12 +57,12 @@ test("Error handling", () => {
 
 	{
 		const evaluator = new Evaluator({ foo: null });
-		assert.throws(() => evaluator.evaluate("foo.bar"), /Cannot read property/);
+		assert.throws(() => evaluator.evaluate("foo.bar"), { message: "Cannot read property 'bar' of null" });
 	}
 
 	{
 		const evaluator = new Evaluator({ foo: undefined });
-		assert.throws(() => evaluator.evaluate("foo.bar"), /Cannot read property/);
+		assert.throws(() => evaluator.evaluate("foo.bar"), { message: "Cannot read property 'bar' of undefined" });
 	}
 
 	{
