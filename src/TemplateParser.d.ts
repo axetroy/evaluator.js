@@ -1,9 +1,9 @@
 export type TemplateToken = {
 	type: "text" | "expression";
 	value: string;
-	// 仅在 includePositions 为 true 时存在
-	start?: number;
-	end?: number;
+	start: number;
+	end: number;
+	// Optional: the position of the content inside expression tokens
 	contentStart?: number;
 	contentEnd?: number;
 };
