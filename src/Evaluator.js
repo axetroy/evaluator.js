@@ -3,7 +3,7 @@ import * as acorn from "acorn";
 // Error message constants for better maintainability
 const ERROR_MESSAGES = {
 	DELETE_NOT_SUPPORTED: "Delete operator is mutable and not supported",
-	MUTABLE_METHOD: "Cannot call mutable prototype method",
+	MUTABLE_METHOD: "Mutable method is not allowed",
 	NEW_FUNCTION_NOT_ALLOWED: "Cannot use new with Function constructor",
 	NOT_A_FUNCTION: "is not a function",
 	PROPERTY_READ_ERROR: "Cannot read property",
@@ -69,61 +69,70 @@ const GLOBAL_SCOPE = Object.assign(Object.create(null), {
 });
 
 // Set of methods that mutate their objects and should be blocked for safety
-const mutableMethods = new Set([
-	Array.prototype.push,
-	Array.prototype.pop,
-	Array.prototype.shift,
-	Array.prototype.unshift,
-	Array.prototype.splice,
-	Array.prototype.reverse,
-	Array.prototype.sort,
-	Array.prototype.fill,
-	Array.prototype.copyWithin,
-	ArrayBuffer.prototype.slice,
-	DataView.prototype.setInt8,
-	DataView.prototype.setUint8,
-	DataView.prototype.setInt16,
-	DataView.prototype.setUint16,
-	DataView.prototype.setInt32,
-	DataView.prototype.setUint32,
-	DataView.prototype.setFloat32,
-	DataView.prototype.setFloat64,
-	// TypedArray methods
-	...typeArrayConstructors.flatMap((TypedArray) => [
-		TypedArray.prototype.set,
-		TypedArray.prototype.fill,
-		TypedArray.prototype.copyWithin,
-		TypedArray.prototype.reverse,
-		TypedArray.prototype.sort,
-	]),
+const mutableMethods = new Set(
+	[
+		"Array.prototype.push",
+		"Array.prototype.pop",
+		"Array.prototype.shift",
+		"Array.prototype.unshift",
+		"Array.prototype.splice",
+		"Array.prototype.reverse",
+		"Array.prototype.sort",
+		"Array.prototype.fill",
+		"Array.prototype.copyWithin",
+		"Object.freeze",
+		"Object.defineProperty",
+		"Object.defineProperties",
+		"Object.preventExtensions",
+		"Object.setPrototypeOf",
+		"Object.assign",
+		"Object.seal",
+		"Reflect.set",
+		"Reflect.defineProperty",
+		"Reflect.deleteProperty",
+		"Set.prototype.add",
+		"Set.prototype.delete",
+		"Set.prototype.clear",
+		"WeakSet.prototype.add",
+		"WeakSet.prototype.delete",
+		"Map.prototype.set",
+		"Map.prototype.delete",
+		"Map.prototype.clear",
+		"WeakMap.prototype.set",
+		"WeakMap.prototype.delete",
+		"Date.prototype.setMilliseconds",
+		"Date.prototype.setSeconds",
+		"Date.prototype.setUTCSeconds",
+		"Date.prototype.setMinutes",
+		"Date.prototype.setHours",
+		"Date.prototype.setMonth",
+		"Date.prototype.setDate",
+		"Date.prototype.setFullYear",
+		"Date.prototype.setUTCMinutes",
+		"Date.prototype.setUTCHours",
+		"Date.prototype.setUTCDate",
+		"Date.prototype.setUTCMonth",
+		"Date.prototype.setUTCFullYear",
+		"Date.prototype.setTime",
+		"Date.prototype.setYear",
+		"RegExp.prototype.compile",
+	]
+		.map((path) => {
+			const [object, ...properties] = path.split(".");
 
-	Object.freeze,
-	Object.defineProperty,
-	Object.defineProperties,
-	Object.preventExtensions,
-	Object.setPrototypeOf,
-	Object.assign,
-	Set.prototype.add,
-	Set.prototype.delete,
-	Set.prototype.clear,
-	WeakSet.prototype.add,
-	WeakSet.prototype.delete,
-	Map.prototype.set,
-	Map.prototype.delete,
-	Map.prototype.clear,
-	WeakMap.prototype.set,
-	WeakMap.prototype.delete,
-	Date.prototype.setMilliseconds,
-	Date.prototype.setMinutes,
-	Date.prototype.setHours,
-	Date.prototype.setDate,
-	Date.prototype.setFullYear,
-	Date.prototype.setUTCMinutes,
-	Date.prototype.setUTCHours,
-	Date.prototype.setUTCDate,
-	Date.prototype.setUTCFullYear,
-	Date.prototype.setTime,
-]);
+			let current = globalThis[object];
+			for (const prop of properties) {
+				if (current && Object.hasOwn(current, prop)) {
+					current = current[prop];
+				} else {
+					return null;
+				}
+			}
+
+			return typeof current === "function" ? current : null;
+		})
+		.filter(Boolean)
+);
 
 /**
  * A JavaScript expression evaluator that safely evaluates expressions within a sandboxed environment.
@@ -391,7 +400,6 @@ export class Evaluator {
 				return typeof this.visit(node.argument);
 			}
 			case "void": {
-				// eslint-disable-next-line sonarjs/void-use
 				return void this.visit(node.argument);
 			}
 			case "delete": {
@@ -437,23 +445,7 @@ export class Evaluator {
 			throw new TypeError(`${ERROR_MESSAGES.PROPERTY_READ_ERROR} '${property}' of ${object}`);
 		}
 
-		// Check for own properties first (instance properties take precedence)
-		if (Object.hasOwn(object, property)) {
-			return object[property];
-		}
-
-		const prototypeValue = object[property];
-
-		if (mutableMethods.has(prototypeValue)) {
-			throw new Error(`${ERROR_MESSAGES.MUTABLE_METHOD}: ${property}`);
-		}
-
-		if (typeof prototypeValue === "function") {
-			// Bind prototype methods to the instance
-			return prototypeValue.bind(object);
-		}
-
-		return prototypeValue;
+		return object[property];
 	}
 
 	/**
@@ -520,7 +512,13 @@ export class Evaluator {
 
 		const args = node.arguments.map((arg) => this.visit(arg));
 
-		return func(...args);
+		if (mutableMethods.has(func)) {
+			throw new Error(ERROR_MESSAGES.MUTABLE_METHOD);
+		}
+
+		const target = node.callee.type === "MemberExpression" ? this.visit(node.callee.object) : null;
+
+		return func.apply(target, args);
 	}
 
 	/**

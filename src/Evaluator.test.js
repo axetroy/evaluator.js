@@ -186,8 +186,10 @@ test("Scope handling", () => {
 
 // 测试不可变的原型方法
 test("Immutable prototype methods", () => {
-	assert.throws(() => evaluator.evaluate("[1, 2].push(3)"), { message: "Cannot call mutable prototype method: push" });
-	assert.throws(() => evaluator.evaluate("[1, 2].pop()"), { message: "Cannot call mutable prototype method: pop" });
+	assert.throws(() => evaluator.evaluate("[1, 2].push(3)"), { message: "Mutable method is not allowed" });
+	assert.throws(() => evaluator.evaluate("[1, 2].pop()"), { message: "Mutable method is not allowed" });
+	assert.throws(() => evaluator.evaluate("Object.assign({a:1}, {b:2})"), { message: "Mutable method is not allowed" });
+	// assert.throws(() => evaluator.evaluate("Array.prototype.splice.call([1,2,3], 1, 1)"), { message: "Mutable method is not allowed" });
 });
 
 // 测试全局方法
@@ -303,10 +305,10 @@ test("Very large numbers", () => {
 test("String operations", () => {
 	const evaluator = new Evaluator({ str: "Hello World" });
 	assert.equal(evaluator.evaluate('"Hello" + " " + "World"'), "Hello World");
-	assert.equal(evaluator.evaluate('str.toUpperCase()'), "HELLO WORLD");
-	assert.equal(evaluator.evaluate('str.toLowerCase()'), "hello world");
-	assert.equal(evaluator.evaluate('str.substring(0, 5)'), "Hello");
-	assert.equal(evaluator.evaluate('str.slice(6)'), "World");
+	assert.equal(evaluator.evaluate("str.toUpperCase()"), "HELLO WORLD");
+	assert.equal(evaluator.evaluate("str.toLowerCase()"), "hello world");
+	assert.equal(evaluator.evaluate("str.substring(0, 5)"), "Hello");
+	assert.equal(evaluator.evaluate("str.slice(6)"), "World");
 	assert.equal(evaluator.evaluate('str.indexOf("World")'), 6);
 	assert.equal(evaluator.evaluate('str.includes("World")'), true);
 	assert.equal(evaluator.evaluate('str.startsWith("Hello")'), true);
@@ -322,30 +324,34 @@ test("String operations", () => {
 // 测试数组的更多操作
 test("More array operations", () => {
 	const evaluator = new Evaluator({ arr: [1, 2, 3, 4, 5] });
-	assert.deepEqual(evaluator.evaluate('arr.slice(1, 3)'), [2, 3]);
-	assert.deepEqual(evaluator.evaluate('arr.concat([6, 7])'), [1, 2, 3, 4, 5, 6, 7]);
-	assert.deepEqual(evaluator.evaluate('arr.filter(x => x > 2)'), [3, 4, 5]);
-	assert.equal(evaluator.evaluate('arr.reduce((a, b) => a + b, 0)'), 15);
-	assert.equal(evaluator.evaluate('arr.find(x => x > 3)'), 4);
-	assert.equal(evaluator.evaluate('arr.findIndex(x => x > 3)'), 3);
-	assert.equal(evaluator.evaluate('arr.some(x => x > 4)'), true);
-	assert.equal(evaluator.evaluate('arr.every(x => x > 0)'), true);
-	assert.equal(evaluator.evaluate('arr.includes(3)'), true);
-	assert.equal(evaluator.evaluate('arr.indexOf(3)'), 2);
-	assert.equal(evaluator.evaluate('arr.lastIndexOf(3)'), 2);
+	assert.deepEqual(evaluator.evaluate("arr.slice(1, 3)"), [2, 3]);
+	assert.deepEqual(evaluator.evaluate("arr.concat([6, 7])"), [1, 2, 3, 4, 5, 6, 7]);
+	assert.deepEqual(evaluator.evaluate("arr.filter(x => x > 2)"), [3, 4, 5]);
+	assert.equal(evaluator.evaluate("arr.reduce((a, b) => a + b, 0)"), 15);
+	assert.equal(evaluator.evaluate("arr.find(x => x > 3)"), 4);
+	assert.equal(evaluator.evaluate("arr.findIndex(x => x > 3)"), 3);
+	assert.equal(evaluator.evaluate("arr.some(x => x > 4)"), true);
+	assert.equal(evaluator.evaluate("arr.every(x => x > 0)"), true);
+	assert.equal(evaluator.evaluate("arr.includes(3)"), true);
+	assert.equal(evaluator.evaluate("arr.indexOf(3)"), 2);
+	assert.equal(evaluator.evaluate("arr.lastIndexOf(3)"), 2);
 	assert.deepEqual(evaluator.evaluate('arr.join("-")'), "1-2-3-4-5");
-	assert.deepEqual(evaluator.evaluate('[1, [2, [3, 4]]].flat()'), [1, 2, [3, 4]]);
-	assert.deepEqual(evaluator.evaluate('[1, [2, [3, 4]]].flat(2)'), [1, 2, 3, 4]);
-	assert.deepEqual(evaluator.evaluate('[1, 2, 3].flatMap(x => [x, x * 2])'), [1, 2, 2, 4, 3, 6]);
+	assert.deepEqual(evaluator.evaluate("[1, [2, [3, 4]]].flat()"), [1, 2, [3, 4]]);
+	assert.deepEqual(evaluator.evaluate("[1, [2, [3, 4]]].flat(2)"), [1, 2, 3, 4]);
+	assert.deepEqual(evaluator.evaluate("[1, 2, 3].flatMap(x => [x, x * 2])"), [1, 2, 2, 4, 3, 6]);
 });
 
 // 测试对象操作
 test("Object operations", () => {
 	const evaluator = new Evaluator({ obj: { a: 1, b: 2, c: 3 } });
-	assert.deepEqual(evaluator.evaluate('Object.keys(obj)'), ['a', 'b', 'c']);
-	assert.deepEqual(evaluator.evaluate('Object.values(obj)'), [1, 2, 3]);
-	assert.deepEqual(evaluator.evaluate('Object.entries(obj)'), [['a', 1], ['b', 2], ['c', 3]]);
-	assert.equal(evaluator.evaluate('Object.keys(obj).length'), 3);
+	assert.deepEqual(evaluator.evaluate("Object.keys(obj)"), ["a", "b", "c"]);
+	assert.deepEqual(evaluator.evaluate("Object.values(obj)"), [1, 2, 3]);
+	assert.deepEqual(evaluator.evaluate("Object.entries(obj)"), [
+		["a", 1],
+		["b", 2],
+		["c", 3],
+	]);
+	assert.equal(evaluator.evaluate("Object.keys(obj).length"), 3);
 	// Note: 'in' operator is not supported by the evaluator
 	assert.throws(() => evaluator.evaluate('"a" in obj'), { message: "Unsupported operator: in" });
 });
@@ -358,59 +364,59 @@ test("Number parsing and conversion", () => {
 	assert.equal(evaluator.evaluate('parseFloat("123.45")'), 123.45);
 	assert.equal(evaluator.evaluate('Number("123")'), 123);
 	assert.equal(evaluator.evaluate('Number("123.45")'), 123.45);
-	assert.equal(evaluator.evaluate('Number(true)'), 1);
-	assert.equal(evaluator.evaluate('Number(false)'), 0);
-	assert.equal(evaluator.evaluate('Number(null)'), 0);
+	assert.equal(evaluator.evaluate("Number(true)"), 1);
+	assert.equal(evaluator.evaluate("Number(false)"), 0);
+	assert.equal(evaluator.evaluate("Number(null)"), 0);
 	assert.equal(evaluator.evaluate('isNaN(Number("abc"))'), true);
 });
 
 // 测试更多Math方法
 test("More Math methods", () => {
-	assert.equal(evaluator.evaluate('Math.abs(-5)'), 5);
-	assert.equal(evaluator.evaluate('Math.ceil(4.3)'), 5);
-	assert.equal(evaluator.evaluate('Math.floor(4.7)'), 4);
-	assert.equal(evaluator.evaluate('Math.round(4.5)'), 5);
-	assert.equal(evaluator.evaluate('Math.round(4.4)'), 4);
-	assert.equal(evaluator.evaluate('Math.trunc(4.9)'), 4);
-	assert.equal(evaluator.evaluate('Math.sign(-5)'), -1);
-	assert.equal(evaluator.evaluate('Math.sign(5)'), 1);
-	assert.equal(evaluator.evaluate('Math.sign(0)'), 0);
-	assert.equal(evaluator.evaluate('Math.pow(2, 3)'), 8);
-	assert.equal(evaluator.evaluate('Math.sqrt(16)'), 4);
-	assert.equal(evaluator.evaluate('Math.cbrt(27)'), 3);
-	assert.equal(evaluator.evaluate('Math.hypot(3, 4)'), 5);
-	assert.equal(evaluator.evaluate('Math.exp(0)'), 1);
-	assert.equal(evaluator.evaluate('Math.log(Math.E)'), 1);
-	assert.equal(evaluator.evaluate('Math.log10(100)'), 2);
-	assert.equal(evaluator.evaluate('Math.log2(8)'), 3);
-	assert.equal(evaluator.evaluate('Math.sin(0)'), 0);
-	assert.equal(evaluator.evaluate('Math.cos(0)'), 1);
+	assert.equal(evaluator.evaluate("Math.abs(-5)"), 5);
+	assert.equal(evaluator.evaluate("Math.ceil(4.3)"), 5);
+	assert.equal(evaluator.evaluate("Math.floor(4.7)"), 4);
+	assert.equal(evaluator.evaluate("Math.round(4.5)"), 5);
+	assert.equal(evaluator.evaluate("Math.round(4.4)"), 4);
+	assert.equal(evaluator.evaluate("Math.trunc(4.9)"), 4);
+	assert.equal(evaluator.evaluate("Math.sign(-5)"), -1);
+	assert.equal(evaluator.evaluate("Math.sign(5)"), 1);
+	assert.equal(evaluator.evaluate("Math.sign(0)"), 0);
+	assert.equal(evaluator.evaluate("Math.pow(2, 3)"), 8);
+	assert.equal(evaluator.evaluate("Math.sqrt(16)"), 4);
+	assert.equal(evaluator.evaluate("Math.cbrt(27)"), 3);
+	assert.equal(evaluator.evaluate("Math.hypot(3, 4)"), 5);
+	assert.equal(evaluator.evaluate("Math.exp(0)"), 1);
+	assert.equal(evaluator.evaluate("Math.log(Math.E)"), 1);
+	assert.equal(evaluator.evaluate("Math.log10(100)"), 2);
+	assert.equal(evaluator.evaluate("Math.log2(8)"), 3);
+	assert.equal(evaluator.evaluate("Math.sin(0)"), 0);
+	assert.equal(evaluator.evaluate("Math.cos(0)"), 1);
 });
 
 // 测试BigInt
 test("BigInt operations", () => {
-	assert.equal(evaluator.evaluate('BigInt(123)'), 123n);
+	assert.equal(evaluator.evaluate("BigInt(123)"), 123n);
 	assert.equal(evaluator.evaluate('BigInt("999999999999999999")'), 999999999999999999n);
-	assert.equal(evaluator.evaluate('BigInt(123) + BigInt(456)'), 579n);
-	assert.equal(evaluator.evaluate('BigInt(10) * BigInt(20)'), 200n);
-	assert.equal(evaluator.evaluate('BigInt(100) / BigInt(3)'), 33n);
-	assert.equal(evaluator.evaluate('BigInt(100) % BigInt(3)'), 1n);
-	assert.equal(evaluator.evaluate('BigInt(2) ** BigInt(10)'), 1024n);
+	assert.equal(evaluator.evaluate("BigInt(123) + BigInt(456)"), 579n);
+	assert.equal(evaluator.evaluate("BigInt(10) * BigInt(20)"), 200n);
+	assert.equal(evaluator.evaluate("BigInt(100) / BigInt(3)"), 33n);
+	assert.equal(evaluator.evaluate("BigInt(100) % BigInt(3)"), 1n);
+	assert.equal(evaluator.evaluate("BigInt(2) ** BigInt(10)"), 1024n);
 });
 
 // 测试Symbol
 test("Symbol operations", () => {
-	assert.equal(evaluator.evaluate('typeof Symbol()'), 'symbol');
-	assert.equal(evaluator.evaluate('typeof Symbol("test")'), 'symbol');
-	assert.equal(evaluator.evaluate('Symbol("test").description'), 'test');
+	assert.equal(evaluator.evaluate("typeof Symbol()"), "symbol");
+	assert.equal(evaluator.evaluate('typeof Symbol("test")'), "symbol");
+	assert.equal(evaluator.evaluate('Symbol("test").description'), "test");
 });
 
 // 测试正则表达式
 test("RegExp operations", () => {
 	const evaluator = new Evaluator({ str: "Hello World 123" });
-	assert.equal(evaluator.evaluate('/hello/i.test(str)'), true);
-	assert.equal(evaluator.evaluate('/\\d+/.test(str)'), true);
-	assert.equal(evaluator.evaluate('str.match(/\\d+/)[0]'), '123');
+	assert.equal(evaluator.evaluate("/hello/i.test(str)"), true);
+	assert.equal(evaluator.evaluate("/\\d+/.test(str)"), true);
+	assert.equal(evaluator.evaluate("str.match(/\\d+/)[0]"), "123");
 	assert.equal(evaluator.evaluate('str.replace(/\\d+/, "456")'), "Hello World 456");
 	assert.equal(evaluator.evaluate('/hello/i.test("HELLO")'), true);
 	assert.equal(evaluator.evaluate('new RegExp("world", "i").test(str)'), true);
@@ -419,9 +425,9 @@ test("RegExp operations", () => {
 // 测试JSON操作
 test("JSON operations", () => {
 	const evaluator = new Evaluator({ obj: { a: 1, b: 2 } });
-	assert.equal(evaluator.evaluate('JSON.stringify(obj)'), '{"a":1,"b":2}');
+	assert.equal(evaluator.evaluate("JSON.stringify(obj)"), '{"a":1,"b":2}');
 	assert.deepEqual(evaluator.evaluate('JSON.parse("{\\"x\\":10}")'), { x: 10 });
-	assert.deepEqual(evaluator.evaluate('JSON.parse(JSON.stringify(obj))'), { a: 1, b: 2 });
+	assert.deepEqual(evaluator.evaluate("JSON.parse(JSON.stringify(obj))"), { a: 1, b: 2 });
 });
 
 // 测试类型转换边界情况
@@ -430,65 +436,70 @@ test("Type coercion edge cases", () => {
 	assert.equal(evaluator.evaluate('"5" - 5'), 0);
 	assert.equal(evaluator.evaluate('"5" * 5'), 25);
 	assert.equal(evaluator.evaluate('"5" / 5'), 1);
-	assert.equal(evaluator.evaluate('true + true'), 2);
-	assert.equal(evaluator.evaluate('true + false'), 1);
-	assert.equal(evaluator.evaluate('+true'), 1);
-	assert.equal(evaluator.evaluate('+false'), 0);
+	assert.equal(evaluator.evaluate("true + true"), 2);
+	assert.equal(evaluator.evaluate("true + false"), 1);
+	assert.equal(evaluator.evaluate("+true"), 1);
+	assert.equal(evaluator.evaluate("+false"), 0);
 	assert.equal(evaluator.evaluate('+"123"'), 123);
-	assert.equal(evaluator.evaluate('!!1'), true);
-	assert.equal(evaluator.evaluate('!!0'), false);
+	assert.equal(evaluator.evaluate("!!1"), true);
+	assert.equal(evaluator.evaluate("!!0"), false);
 	assert.equal(evaluator.evaluate('!!"hello"'), true);
 	assert.equal(evaluator.evaluate('!!""'), false);
 });
 
 // 测试更多Date操作
 test("More Date operations", () => {
-	const evaluator = new Evaluator({ date: new Date('2024-01-01T00:00:00Z') });
-	assert.equal(evaluator.evaluate('date.getFullYear()'), 2024);
-	assert.equal(evaluator.evaluate('date.getUTCMonth()'), 0);
-	assert.equal(evaluator.evaluate('date.getUTCDate()'), 1);
+	const evaluator = new Evaluator({ date: new Date("2024-01-01T00:00:00Z") });
+	assert.equal(evaluator.evaluate("date.getFullYear()"), 2024);
+	assert.equal(evaluator.evaluate("date.getUTCMonth()"), 0);
+	assert.equal(evaluator.evaluate("date.getUTCDate()"), 1);
 	assert.equal(evaluator.evaluate('new Date("2024-01-01").getFullYear()'), 2024);
-	assert.equal(evaluator.evaluate('Date.now() > 0'), true);
+	assert.equal(evaluator.evaluate("Date.now() > 0"), true);
 });
 
 // 测试Set操作
 test("Set operations", () => {
 	const evaluator = new Evaluator({ set: new Set([1, 2, 3]) });
-	assert.equal(evaluator.evaluate('set.size'), 3);
-	assert.equal(evaluator.evaluate('set.has(2)'), true);
-	assert.equal(evaluator.evaluate('set.has(4)'), false);
-	assert.deepEqual(evaluator.evaluate('Array.from(set)'), [1, 2, 3]);
+	assert.equal(evaluator.evaluate("set.size"), 3);
+	assert.equal(evaluator.evaluate("set.has(2)"), true);
+	assert.equal(evaluator.evaluate("set.has(4)"), false);
+	assert.deepEqual(evaluator.evaluate("Array.from(set)"), [1, 2, 3]);
 	// Note: Spread operator is not supported by the evaluator
 	// assert.deepEqual(evaluator.evaluate('[...set]'), [1, 2, 3]);
-	assert.equal(evaluator.evaluate('new Set([1, 2, 2, 3]).size'), 3);
+	assert.equal(evaluator.evaluate("new Set([1, 2, 2, 3]).size"), 3);
 });
 
 // 测试Map操作
 test("Map operations", () => {
-	const evaluator = new Evaluator({ map: new Map([['a', 1], ['b', 2]]) });
-	assert.equal(evaluator.evaluate('map.size'), 2);
+	const evaluator = new Evaluator({
+		map: new Map([
+			["a", 1],
+			["b", 2],
+		]),
+	});
+	assert.equal(evaluator.evaluate("map.size"), 2);
 	assert.equal(evaluator.evaluate('map.get("a")'), 1);
 	assert.equal(evaluator.evaluate('map.has("b")'), true);
 	assert.equal(evaluator.evaluate('map.has("c")'), false);
-	assert.deepEqual(evaluator.evaluate('Array.from(map.keys())'), ['a', 'b']);
-	assert.deepEqual(evaluator.evaluate('Array.from(map.values())'), [1, 2]);
+	assert.deepEqual(evaluator.evaluate("Array.from(map.keys())"), ["a", "b"]);
+	assert.deepEqual(evaluator.evaluate("Array.from(map.values())"), [1, 2]);
 });
 
 // 测试Nullish coalescing with various falsy values
 test("Nullish coalescing with falsy values", () => {
-	assert.equal(evaluator.evaluate('null ?? 42'), 42);
-	assert.equal(evaluator.evaluate('undefined ?? 42'), 42);
-	assert.equal(evaluator.evaluate('0 ?? 42'), 0);
+	assert.equal(evaluator.evaluate("null ?? 42"), 42);
+	assert.equal(evaluator.evaluate("undefined ?? 42"), 42);
+	assert.equal(evaluator.evaluate("0 ?? 42"), 0);
 	assert.equal(evaluator.evaluate('"" ?? 42'), "");
-	assert.equal(evaluator.evaluate('false ?? 42'), false);
-	assert.equal(evaluator.evaluate('NaN ?? 42'), NaN);
+	assert.equal(evaluator.evaluate("false ?? 42"), false);
+	assert.equal(evaluator.evaluate("NaN ?? 42"), NaN);
 });
 
 // 测试复杂的三元表达式
 test("Complex ternary expressions", () => {
-	assert.equal(evaluator.evaluate('true ? (true ? 1 : 2) : 3'), 1);
-	assert.equal(evaluator.evaluate('false ? 1 : (true ? 2 : 3)'), 2);
-	assert.equal(evaluator.evaluate('true ? 1 : false ? 2 : 3'), 1);
+	assert.equal(evaluator.evaluate("true ? (true ? 1 : 2) : 3"), 1);
+	assert.equal(evaluator.evaluate("false ? 1 : (true ? 2 : 3)"), 2);
+	assert.equal(evaluator.evaluate("true ? 1 : false ? 2 : 3"), 1);
 	assert.equal(evaluator.evaluate('1 > 2 ? "a" : 2 > 1 ? "b" : "c"'), "b");
 });
 
@@ -496,35 +507,35 @@ test("Complex ternary expressions", () => {
 test("More TypedArray operations", () => {
 	// Note: Spread operator is not supported by the evaluator
 	// assert.deepEqual(evaluator.evaluate('[...new Uint8Array([1, 2, 3])]'), [1, 2, 3]);
-	assert.equal(evaluator.evaluate('new Int16Array([1, 2, 3]).length'), 3);
-	assert.equal(evaluator.evaluate('new Int32Array([1, 2, 3])[1]'), 2);
-	assert.equal(evaluator.evaluate('new Float32Array([1.5, 2.5, 3.5])[0]'), 1.5);
-	assert.equal(evaluator.evaluate('new Float64Array([1.1, 2.2, 3.3]).length'), 3);
-	assert.deepEqual(evaluator.evaluate('Array.from(new Uint8Array([1, 2, 3]).slice(1))'), [2, 3]);
+	assert.equal(evaluator.evaluate("new Int16Array([1, 2, 3]).length"), 3);
+	assert.equal(evaluator.evaluate("new Int32Array([1, 2, 3])[1]"), 2);
+	assert.equal(evaluator.evaluate("new Float32Array([1.5, 2.5, 3.5])[0]"), 1.5);
+	assert.equal(evaluator.evaluate("new Float64Array([1.1, 2.2, 3.3]).length"), 3);
+	assert.deepEqual(evaluator.evaluate("Array.from(new Uint8Array([1, 2, 3]).slice(1))"), [2, 3]);
 });
 
 // 测试复杂的嵌套表达式
 test("Complex nested expressions", () => {
-	assert.equal(evaluator.evaluate('((1 + 2) * (3 + 4)) / ((5 - 2) + (6 - 4))'), 4.2);
+	assert.equal(evaluator.evaluate("((1 + 2) * (3 + 4)) / ((5 - 2) + (6 - 4))"), 4.2);
 	assert.deepEqual(
-		evaluator.evaluate('[1, 2, 3].map(x => x * 2).filter(x => x > 2).reduce((a, b) => a + b, 0)'),
+		evaluator.evaluate("[1, 2, 3].map(x => x * 2).filter(x => x > 2).reduce((a, b) => a + b, 0)"),
 		10 // [2, 4, 6] -> [4, 6] -> 10
 	);
 	// Note: Spread operator is not supported
 	// assert.equal(evaluator.evaluate('Math.max(...[1, 2, 3].map(x => x * 2))'), 6);
-	const arr = [1, 2, 3].map(x => x * 2);
+	const arr = [1, 2, 3].map((x) => x * 2);
 	const evaluator2 = new Evaluator({ arr });
-	assert.equal(evaluator2.evaluate('Math.max(arr[0], arr[1], arr[2])'), 6);
+	assert.equal(evaluator2.evaluate("Math.max(arr[0], arr[1], arr[2])"), 6);
 });
 
 // 测试更多模板字符串边界情况
 test("More template literal edge cases", () => {
-	const evaluator = new Evaluator({ name: 'World', count: 5 });
-	assert.equal(evaluator.evaluate('`Hello ${name}!`'), "Hello World!");
-	assert.equal(evaluator.evaluate('`Count: ${count}`'), "Count: 5");
-	assert.equal(evaluator.evaluate('`Result: ${count * 2}`'), "Result: 10");
-	assert.equal(evaluator.evaluate('`${1}${2}${3}`'), "123");
-	assert.equal(evaluator.evaluate('`nested: ${`inner: ${5}`}`'), "nested: inner: 5");
+	const evaluator = new Evaluator({ name: "World", count: 5 });
+	assert.equal(evaluator.evaluate("`Hello ${name}!`"), "Hello World!");
+	assert.equal(evaluator.evaluate("`Count: ${count}`"), "Count: 5");
+	assert.equal(evaluator.evaluate("`Result: ${count * 2}`"), "Result: 10");
+	assert.equal(evaluator.evaluate("`${1}${2}${3}`"), "123");
+	assert.equal(evaluator.evaluate("`nested: ${`inner: ${5}`}`"), "nested: inner: 5");
 });
 
 // 测试更多可选链场景
@@ -534,35 +545,35 @@ test("More optional chaining scenarios", () => {
 			a: {
 				b: {
 					c: 42,
-					fn: () => 100
-				}
-			}
-		}
+					fn: () => 100,
+				},
+			},
+		},
 	});
-	assert.equal(evaluator.evaluate('obj?.a?.b?.c'), 42);
-	assert.equal(evaluator.evaluate('obj?.a?.b?.d'), undefined);
-	assert.equal(evaluator.evaluate('obj?.a?.x?.c'), undefined);
-	assert.equal(evaluator.evaluate('obj?.a?.b?.fn()'), 100);
-	assert.equal(evaluator.evaluate('obj?.a?.b?.fn?.()'), 100);
+	assert.equal(evaluator.evaluate("obj?.a?.b?.c"), 42);
+	assert.equal(evaluator.evaluate("obj?.a?.b?.d"), undefined);
+	assert.equal(evaluator.evaluate("obj?.a?.x?.c"), undefined);
+	assert.equal(evaluator.evaluate("obj?.a?.b?.fn()"), 100);
+	assert.equal(evaluator.evaluate("obj?.a?.b?.fn?.()"), 100);
 });
 
 // 测试扩展运算符 - 注意：evaluator不支持扩展运算符
 test("Spread operator not supported", () => {
 	const evaluator = new Evaluator({ arr1: [1, 2], arr2: [3, 4] });
 	// Note: Spread operator is not supported by the evaluator
-	assert.throws(() => evaluator.evaluate('[...arr1, ...arr2]'), { message: "Unsupported node type: SpreadElement" });
+	assert.throws(() => evaluator.evaluate("[...arr1, ...arr2]"), { message: "Unsupported node type: SpreadElement" });
 	// Can use concat instead
-	assert.deepEqual(evaluator.evaluate('arr1.concat(arr2)'), [1, 2, 3, 4]);
-	assert.deepEqual(evaluator.evaluate('[0].concat(arr1).concat(arr2).concat([5])'), [0, 1, 2, 3, 4, 5]);
+	assert.deepEqual(evaluator.evaluate("arr1.concat(arr2)"), [1, 2, 3, 4]);
+	assert.deepEqual(evaluator.evaluate("[0].concat(arr1).concat(arr2).concat([5])"), [0, 1, 2, 3, 4, 5]);
 });
 
 // 测试箭头函数的剩余参数 - 注意：evaluator不支持剩余参数
 test("Arrow function rest parameters not supported", () => {
 	// Note: Rest parameters are not supported by the evaluator
-	assert.throws(() => evaluator.evaluate('((...args) => args.length)(1, 2, 3)'));
+	assert.throws(() => evaluator.evaluate("((...args) => args.length)(1, 2, 3)"));
 	// Can use regular parameters instead
-	assert.equal(evaluator.evaluate('((a, b, c) => [a, b, c].length)(1, 2, 3)'), 3);
-	assert.deepEqual(evaluator.evaluate('((a, b, c) => [a, b, c])(1, 2, 3)'), [1, 2, 3]);
+	assert.equal(evaluator.evaluate("((a, b, c) => [a, b, c].length)(1, 2, 3)"), 3);
+	assert.deepEqual(evaluator.evaluate("((a, b, c) => [a, b, c])(1, 2, 3)"), [1, 2, 3]);
 });
 
 // 测试错误类型
@@ -576,28 +587,31 @@ test("Error types", () => {
 
 // 测试布尔转换
 test("Boolean conversion", () => {
-	assert.equal(evaluator.evaluate('Boolean(1)'), true);
-	assert.equal(evaluator.evaluate('Boolean(0)'), false);
+	assert.equal(evaluator.evaluate("Boolean(1)"), true);
+	assert.equal(evaluator.evaluate("Boolean(0)"), false);
 	assert.equal(evaluator.evaluate('Boolean("hello")'), true);
 	assert.equal(evaluator.evaluate('Boolean("")'), false);
-	assert.equal(evaluator.evaluate('Boolean(null)'), false);
-	assert.equal(evaluator.evaluate('Boolean(undefined)'), false);
-	assert.equal(evaluator.evaluate('Boolean([])'), true);
-	assert.equal(evaluator.evaluate('Boolean({})'), true);
+	assert.equal(evaluator.evaluate("Boolean(null)"), false);
+	assert.equal(evaluator.evaluate("Boolean(undefined)"), false);
+	assert.equal(evaluator.evaluate("Boolean([])"), true);
+	assert.equal(evaluator.evaluate("Boolean({})"), true);
 });
 
 // 测试字符串转换
 test("String conversion", () => {
-	assert.equal(evaluator.evaluate('String(123)'), "123");
-	assert.equal(evaluator.evaluate('String(true)'), "true");
-	assert.equal(evaluator.evaluate('String(null)'), "null");
-	assert.equal(evaluator.evaluate('String(undefined)'), "undefined");
-	assert.equal(evaluator.evaluate('String([1, 2, 3])'), "1,2,3");
+	assert.equal(evaluator.evaluate("String(123)"), "123");
+	assert.equal(evaluator.evaluate("String(true)"), "true");
+	assert.equal(evaluator.evaluate("String(null)"), "null");
+	assert.equal(evaluator.evaluate("String(undefined)"), "undefined");
+	assert.equal(evaluator.evaluate("String([1, 2, 3])"), "1,2,3");
 });
 
 // 测试URI编码
 test("URI encoding/decoding", () => {
-	assert.equal(evaluator.evaluate('encodeURI("https://example.com/path?query=测试")'), "https://example.com/path?query=%E6%B5%8B%E8%AF%95");
+	assert.equal(
+		evaluator.evaluate('encodeURI("https://example.com/path?query=测试")'),
+		"https://example.com/path?query=%E6%B5%8B%E8%AF%95"
+	);
 	assert.equal(evaluator.evaluate('decodeURI(encodeURI("测试"))'), "测试");
 	assert.equal(evaluator.evaluate('encodeURIComponent("测试")'), "%E6%B5%8B%E8%AF%95");
 	assert.equal(evaluator.evaluate('decodeURIComponent("%E6%B5%8B%E8%AF%95")'), "测试");
@@ -606,45 +620,45 @@ test("URI encoding/decoding", () => {
 // 测试数组空位
 test("Array holes", () => {
 	const evaluator = new Evaluator({ sparse: [1, , 3] });
-	assert.equal(evaluator.evaluate('sparse.length'), 3);
-	assert.equal(evaluator.evaluate('sparse[1]'), undefined);
-	assert.equal(evaluator.evaluate('sparse[0]'), 1);
-	assert.equal(evaluator.evaluate('sparse[2]'), 3);
+	assert.equal(evaluator.evaluate("sparse.length"), 3);
+	assert.equal(evaluator.evaluate("sparse[1]"), undefined);
+	assert.equal(evaluator.evaluate("sparse[0]"), 1);
+	assert.equal(evaluator.evaluate("sparse[2]"), 3);
 });
 
 // 测试对象计算属性
 test("Computed property names", () => {
-	const evaluator = new Evaluator({ key: 'myKey' });
+	const evaluator = new Evaluator({ key: "myKey" });
 	// Note: Evaluator treats computed properties as property names using the identifier, not the value
 	// This is a limitation of the current implementation
-	assert.deepEqual(evaluator.evaluate('({ [key]: 42 })'), { key: 42 }); // Not { myKey: 42 } as expected
+	assert.deepEqual(evaluator.evaluate("({ [key]: 42 })"), { key: 42 }); // Not { myKey: 42 } as expected
 	assert.deepEqual(evaluator.evaluate('({ ["computed"]: 123 })'), { computed: 123 });
 });
 
 // 测试delete操作符应该抛出错误
 test("Delete operator should throw", () => {
 	const evaluator = new Evaluator({ obj: { a: 1 } });
-	assert.throws(() => evaluator.evaluate('delete obj.a'), { message: "Delete operator is mutable and not supported" });
+	assert.throws(() => evaluator.evaluate("delete obj.a"), { message: "Delete operator is mutable and not supported" });
 });
 
 // 测试未定义的变量
 test("Undefined variables", () => {
-	assert.throws(() => evaluator.evaluate('undefinedVar'), { message: "undefinedVar is not defined" });
-	assert.throws(() => evaluator.evaluate('undefinedVar.property'), { message: "undefinedVar is not defined" });
+	assert.throws(() => evaluator.evaluate("undefinedVar"), { message: "undefinedVar is not defined" });
+	assert.throws(() => evaluator.evaluate("undefinedVar.property"), { message: "undefinedVar is not defined" });
 });
 
 // 测试链式方法调用
 test("Method chaining", () => {
 	const evaluator = new Evaluator({ str: "  Hello World  " });
-	assert.equal(evaluator.evaluate('str.trim().toLowerCase()'), "hello world");
-	assert.equal(evaluator.evaluate('str.trim().toUpperCase().substring(0, 5)'), "HELLO");
-	assert.deepEqual(evaluator.evaluate('[1, 2, 3].map(x => x * 2).filter(x => x > 2)'), [4, 6]);
+	assert.equal(evaluator.evaluate("str.trim().toLowerCase()"), "hello world");
+	assert.equal(evaluator.evaluate("str.trim().toUpperCase().substring(0, 5)"), "HELLO");
+	assert.deepEqual(evaluator.evaluate("[1, 2, 3].map(x => x * 2).filter(x => x > 2)"), [4, 6]);
 });
 
 // 测试Promise
 test("Promise operations", () => {
-	assert.equal(evaluator.evaluate('typeof Promise'), 'function');
+	assert.equal(evaluator.evaluate("typeof Promise"), "function");
 	// Note: Promise.resolve and Promise.reject may not work as expected in the evaluator
 	// because they need proper 'this' binding
-	assert.equal(evaluator.evaluate('new Promise((resolve) => resolve(42))') instanceof Promise, true);
+	assert.equal(evaluator.evaluate("new Promise((resolve) => resolve(42))") instanceof Promise, true);
 });
