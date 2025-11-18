@@ -3,7 +3,7 @@ import globals from "globals";
 
 // Error message constants for better maintainability
 const ERROR_MESSAGES = {
-	DELETE_NOT_SUPPORTED: "Delete operator is mutable and not supported",
+	DELETE_NOT_SUPPORTED: "Delete operator is not allow",
 	MUTABLE_METHOD: "Mutable method is not allowed",
 	NEW_FUNCTION_NOT_ALLOWED: "Cannot use new with Function constructor",
 	NOT_A_FUNCTION: "is not a function",

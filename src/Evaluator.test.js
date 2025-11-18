@@ -638,7 +638,7 @@ test("Computed property names", () => {
 // 测试delete操作符应该抛出错误
 test("Delete operator should throw", () => {
 	const evaluator = new Evaluator({ obj: { a: 1 } });
-	assert.throws(() => evaluator.evaluate("delete obj.a"), { message: "Delete operator is mutable and not supported" });
+	assert.throws(() => evaluator.evaluate("delete obj.a"), { message: "Delete operator is not allow" });
 });
 
 // 测试未定义的变量
