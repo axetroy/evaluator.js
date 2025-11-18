@@ -552,7 +552,6 @@ export class Evaluator {
 				const value = this.visit(element);
 
 				if (element.type === "SpreadElement") {
-					console.log("value --->", value);
 					result.push(...value);
 				} else {
 					result.push(value);
