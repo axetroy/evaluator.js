@@ -275,7 +275,7 @@ test("Special numeric values", () => {
 	assert.equal(evaluator.evaluate("Infinity + 1"), Infinity);
 	assert.equal(evaluator.evaluate("Infinity - Infinity"), NaN);
 	assert.equal(evaluator.evaluate("Infinity / Infinity"), NaN);
-	assert.equal(evaluator.evaluate("0 / 0"), Infinity);
+	assert.equal(evaluator.evaluate("0 / 0"), NaN);
 	assert.equal(evaluator.evaluate("isNaN(NaN)"), true);
 	assert.equal(evaluator.evaluate("isNaN(0)"), false);
 	assert.equal(evaluator.evaluate("isFinite(100)"), true);

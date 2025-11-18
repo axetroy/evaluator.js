@@ -253,78 +253,50 @@ export class Evaluator {
 	 * @private
 	 */
 	handleBinaryExpression(node) {
-		switch (node.operator) {
-			case "+": {
-				return this.visit(node.left) + this.visit(node.right);
-			}
-			case "-": {
-				return this.visit(node.left) - this.visit(node.right);
-			}
-			case "*": {
-				return this.visit(node.left) * this.visit(node.right);
-			}
-			case "**": {
-				return this.visit(node.left) ** this.visit(node.right);
-			}
-			case "/": {
-				const left = this.visit(node.left);
-				const right = this.visit(node.right);
-				if (right === 0) {
-					return 1 / right;
-				}
-				return left / right;
-			}
-			case "==": {
-				// Intentionally using loose equality as per JavaScript semantics
-				return this.visit(node.left) == this.visit(node.right);
-			}
-			case "===": {
-				return this.visit(node.left) === this.visit(node.right);
-			}
-			case "!=": {
-				// Intentionally using loose inequality as per JavaScript semantics
-				return this.visit(node.left) != this.visit(node.right);
-			}
-			case "!==": {
-				return this.visit(node.left) !== this.visit(node.right);
-			}
-			case ">": {
-				return this.visit(node.left) > this.visit(node.right);
-			}
-			case ">=": {
-				return this.visit(node.left) >= this.visit(node.right);
-			}
-			case "<": {
-				return this.visit(node.left) < this.visit(node.right);
-			}
-			case "<=": {
-				return this.visit(node.left) <= this.visit(node.right);
-			}
-			case "%": {
-				const left = this.visit(node.left);
-				const right = this.visit(node.right);
-				if (right === 0) return Number.NaN;
+		const op = node.operator;
+		const left = this.visit(node.left);
+		const right = this.visit(node.right);
+		switch (op) {
+			case "+":
+				return left + right;
+			case "-":
+				return left - right;
+			case "*":
+				return left * right;
+			case "**":
+				return left ** right;
+			case "==":
+				return left == right;
+			case "===":
+				return left === right;
+			case "!=":
+				return left != right;
+			case "!==":
+				return left !== right;
+			case ">":
+				return left > right;
+			case ">=":
+				return left >= right;
+			case "<":
+				return left < right;
+			case "<=":
+				return left <= right;
+			case "%":
 				return left % right;
-			}
-			// Bitwise operators
-			case "&": {
-				return this.visit(node.left) & this.visit(node.right);
-			}
-			case "|": {
-				return this.visit(node.left) | this.visit(node.right);
-			}
-			case "^": {
-				return this.visit(node.left) ^ this.visit(node.right);
-			}
-			case "<<": {
-				return this.visit(node.left) << this.visit(node.right);
-			}
-			case ">>": {
-				return this.visit(node.left) >> this.visit(node.right);
-			}
-			case ">>>": {
-				return this.visit(node.left) >>> this.visit(node.right);
-			}
+			case "/":
+				return left / right;
+			case "|":
+				return left | right;
+			case "&":
+				return left & right;
+			case "^":
+				return left ^ right;
+			case "<<":
+				return left << right;
+			case ">>":
+				return left >> right;
+			case ">>>":
+				return left >>> right;
 			default: {
 				throw new Error(`Unsupported operator: ${node.operator}`);
 			}
