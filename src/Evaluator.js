@@ -10,6 +10,8 @@ const ERROR_MESSAGES = {
 	PROPERTY_READ_ERROR: "Cannot read property",
 	VARIABLE_NOT_DEFINED: "is not defined",
 	FUNCTION_CONSTRUCTOR_NOT_ALLOWED: "Function constructor is not allowed",
+	THIS_NOT_ALLOWED: "'this' keyword is not allowed",
+	NOT_A_VALID_SYNTAX: "is not a valid syntax",
 };
 
 function createGlobalScope() {
@@ -135,6 +137,7 @@ export class Evaluator {
 	 */
 	constructor(variables = {}) {
 		this.scopes = [variables, createGlobalScope()];
+		this.source = undefined;
 	}
 
 	/**
@@ -157,10 +160,16 @@ export class Evaluator {
 	 * @throws {TypeError} If performing invalid operations
 	 */
 	evaluate(expression) {
+		this.source = expression;
+
 		const ast = acorn.parse(expression, { ecmaVersion: "latest" });
 
 		// Start recursive evaluation from the root node
-		return this.execute(ast.body);
+		try {
+			return this.execute(ast.body);
+		} finally {
+			this.source = undefined;
+		}
 	}
 
 	/**
@@ -212,6 +221,12 @@ export class Evaluator {
 			case "ArrayExpression": {
 				return this.handleArrayExpression(node);
 			}
+			case "SpreadElement": {
+				return this.handleSpreadElement(node);
+			}
+			case "ObjectExpression": {
+				return this.handleObjectExpression(node);
+			}
 			case "ArrowFunctionExpression": {
 				return this.handleArrowFunctionExpression(node);
 			}
@@ -243,14 +258,24 @@ export class Evaluator {
 			case "TemplateLiteral": {
 				return this.handleTemplateLiteral(node);
 			}
+			case "ThisExpression": {
+				throw new Error(ERROR_MESSAGES.THIS_NOT_ALLOWED);
+			}
 			default: {
-				throw new Error(`Unsupported node type: ${node.type}`);
+				let content = this.source.slice(node.start, node.end);
+
+				if (content.length > 20) {
+					content = content.slice(0, 17) + "...";
+				}
+
+				throw new Error(`'${content}'` + " " + ERROR_MESSAGES.NOT_A_VALID_SYNTAX);
 			}
 		}
 	}
 
 	/**
 	 * Handles binary expressions (arithmetic and comparison operations).
+	 * @param {import('acorn').BinaryExpression} node
 	 * @private
 	 */
 	handleBinaryExpression(node) {
@@ -298,6 +323,12 @@ export class Evaluator {
 				return left >> right;
 			case ">>>":
 				return left >>> right;
+			case "in": {
+				return left in right;
+			}
+			case "instanceof": {
+				return left instanceof right;
+			}
 			default: {
 				throw new Error(`Unsupported operator: ${node.operator}`);
 			}
@@ -418,7 +449,42 @@ export class Evaluator {
 	 * @private
 	 */
 	handleArrayExpression(node) {
-		return node.elements.map((element) => this.visit(element));
+		const result = [];
+
+		for (let i = 0; i < node.elements.length; i++) {
+			const element = node.elements.at(i);
+			const value = this.visit(element);
+
+			if (element.type === "SpreadElement") {
+				result.push(...value);
+			} else {
+				result.push(value);
+			}
+		}
+
+		return result;
+	}
+
+	/**
+	 * Handles object literal expressions.
+	 * @returns
+	 */
+	handleObjectExpression(node) {
+		const obj = {};
+		for (const prop of node.properties) {
+			if (prop.type === "SpreadElement") {
+				Object.assign(obj, this.visit(prop.argument));
+				continue;
+			}
+			const key = prop.key.name || prop.key.value;
+			const value = this.visit(prop.value);
+			obj[key] = value;
+		}
+		return obj;
+	}
+
+	handleSpreadElement(node) {
+		return this.visit(node.argument);
 	}
 
 	/**
@@ -474,7 +540,27 @@ export class Evaluator {
 		}
 
 		// 仅在存在参数时构建数组
-		const args = node.arguments.length ? node.arguments.map((arg) => this.visit(arg)) : [];
+		const args = (() => {
+			if (node.arguments.length === 0) {
+				return [];
+			}
+
+			let result = [];
+
+			for (let i = 0; i < node.arguments.length; i++) {
+				const element = node.arguments.at(i);
+				const value = this.visit(element);
+
+				if (element.type === "SpreadElement") {
+					console.log("value --->", value);
+					result.push(...value);
+				} else {
+					result.push(value);
+				}
+			}
+
+			return result;
+		})();
 
 		if (getMutableMethods().has(func)) {
 			throw new Error(ERROR_MESSAGES.MUTABLE_METHOD);

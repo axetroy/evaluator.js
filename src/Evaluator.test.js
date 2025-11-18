@@ -262,10 +262,18 @@ test("Disable eval()", () => {
 	assert.throws(() => evaluator.evaluate('eval("foo")'), { message: "eval is not defined" });
 });
 
-describe("disable Function constructor", () => {
+describe("Disable", () => {
 	test("Disable Function constructor", () => {
 		assert.throws(() => evaluator.evaluate('new Function("alert(123)")'), { message: "Cannot use new with Function constructor" });
 		assert.throws(() => evaluator.evaluate('Function("alert(123)")'), { message: "Function constructor is not allowed" });
+	});
+
+	test('Disable "this" keyword', () => {
+		assert.throws(() => evaluator.evaluate("this"), { message: "'this' keyword is not allowed" });
+	});
+
+	test("Disable not support node", () => {
+		assert.throws(() => evaluator.evaluate("with (obj) { foo }"), { message: "'with (obj) { foo }' is not a valid syntax" });
 	});
 });
 
@@ -359,8 +367,7 @@ test("Object operations", () => {
 		["c", 3],
 	]);
 	assert.equal(evaluator.evaluate("Object.keys(obj).length"), 3);
-	// Note: 'in' operator is not supported by the evaluator
-	assert.throws(() => evaluator.evaluate('"a" in obj'), { message: "Unsupported operator: in" });
+	assert.equal(evaluator.evaluate('"a" in obj'), true);
 });
 
 // 测试数值转换和解析
@@ -471,9 +478,7 @@ test("Set operations", () => {
 	assert.equal(evaluator.evaluate("set.has(2)"), true);
 	assert.equal(evaluator.evaluate("set.has(4)"), false);
 	assert.deepEqual(evaluator.evaluate("Array.from(set)"), [1, 2, 3]);
-	// Note: Spread operator is not supported by the evaluator
-	// assert.deepEqual(evaluator.evaluate('[...set]'), [1, 2, 3]);
-	assert.equal(evaluator.evaluate("new Set([1, 2, 2, 3]).size"), 3);
+	assert.deepEqual(evaluator.evaluate("[...set]"), [1, 2, 3]);
 });
 
 // 测试Map操作
@@ -564,14 +569,22 @@ test("More optional chaining scenarios", () => {
 	assert.equal(evaluator.evaluate("obj?.a?.b?.fn?.()"), 100);
 });
 
-// 测试扩展运算符 - 注意：evaluator不支持扩展运算符
-test("Spread operator not supported", () => {
+// 测试扩展运算符
+test("Spread in array literals", () => {
 	const evaluator = new Evaluator({ arr1: [1, 2], arr2: [3, 4] });
-	// Note: Spread operator is not supported by the evaluator
-	assert.throws(() => evaluator.evaluate("[...arr1, ...arr2]"), { message: "Unsupported node type: SpreadElement" });
-	// Can use concat instead
-	assert.deepEqual(evaluator.evaluate("arr1.concat(arr2)"), [1, 2, 3, 4]);
-	assert.deepEqual(evaluator.evaluate("[0].concat(arr1).concat(arr2).concat([5])"), [0, 1, 2, 3, 4, 5]);
+	assert.deepEqual(evaluator.evaluate("[...arr1, ...arr2]"), [1, 2, 3, 4]);
+});
+
+// 测试函数调用中的扩展运算符
+test("Spread in function calls", () => {
+	const evaluator = new Evaluator({ args: [1, 2, 3] });
+	assert.equal(evaluator.evaluate("Math.max(...args)"), 3);
+});
+
+// 测试对象字面量中的扩展运算符
+test("Spread in object literals", () => {
+	const evaluator = new Evaluator({ obj1: { a: 1 }, obj2: { b: 2 }, merge: (a, b) => ({ ...a, ...b }) });
+	assert.deepEqual(evaluator.evaluate("merge({...obj1, ...obj2})"), { a: 1, b: 2 });
 });
 
 // 测试箭头函数的剩余参数 - 注意：evaluator不支持剩余参数
