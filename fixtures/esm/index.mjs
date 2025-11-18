@@ -1,3 +1,3 @@
-import { evaluatorExpression, evaluatorTemplate } from "ecma-evaluator";
+import { evalExpression, evalTemplate } from "ecma-evaluator";
 
-console.log(evaluatorExpression, evaluatorTemplate);
+console.log(evalExpression, evalTemplate);

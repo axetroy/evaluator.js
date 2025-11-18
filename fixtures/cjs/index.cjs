@@ -1,3 +1,3 @@
-const { evaluatorExpression, evaluatorTemplate } = require("ecma-evaluator");
+const { evalExpression, evalTemplate } = require("ecma-evaluator");
 
-console.log(evaluatorExpression, evaluatorTemplate);
+console.log(evalExpression, evalTemplate);
