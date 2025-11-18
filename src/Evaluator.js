@@ -498,6 +498,14 @@ export class Evaluator {
 	 * @private
 	 */
 	handleCallExpression(node) {
+		if (node.callee.type === "MemberExpression") {
+			const object = this.visit(node.callee.object);
+
+			if (mutableMethods.has(object)) {
+				throw new Error(ERROR_MESSAGES.MUTABLE_METHOD);
+			}
+		}
+
 		const calledString = this.getNodeString(node.callee);
 
 		const func = this.visit(node.callee);

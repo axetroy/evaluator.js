@@ -189,7 +189,7 @@ test("Immutable prototype methods", () => {
 	assert.throws(() => evaluator.evaluate("[1, 2].push(3)"), { message: "Mutable method is not allowed" });
 	assert.throws(() => evaluator.evaluate("[1, 2].pop()"), { message: "Mutable method is not allowed" });
 	assert.throws(() => evaluator.evaluate("Object.assign({a:1}, {b:2})"), { message: "Mutable method is not allowed" });
-	// assert.throws(() => evaluator.evaluate("Array.prototype.splice.call([1,2,3], 1, 1)"), { message: "Mutable method is not allowed" });
+	assert.throws(() => evaluator.evaluate("Array.prototype.splice.call([1,2,3], 1, 1)"), { message: "Mutable method is not allowed" });
 });
 
 // 测试全局方法
