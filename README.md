@@ -475,21 +475,18 @@ console.log(evaluator.evaluate("Math.max(x, y)")); // 20
 ### Custom Template Parser
 
 ```js
-import { TemplateParser } from "ecma-evaluator";
+import { evalTemplate } from "ecma-evaluator";
 
-// Create a parser with custom delimiters
-const parser = new TemplateParser({
-	expressionStart: "${",
-	expressionEnd: "}",
-	preserveWhitespace: false,
-});
-
-const tokens = parser.parse("Hello ${ name }!");
-// [
-//   { type: "text", value: "Hello " },
-//   { type: "expression", value: "name" },
-//   { type: "text", value: "!" }
-// ]
+evalTemplate(
+	"Hello ${ name }!",
+	{ name: "World" },
+	{
+		expressionStart: "${",
+		expressionEnd: "}",
+		preserveWhitespace: false,
+	}
+);
+// Output: "Hello World!"
 ```
 
 ## Performance Tips
