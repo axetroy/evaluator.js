@@ -15,6 +15,31 @@ const ERROR_MESSAGES = {
 	NOT_A_VALID_SYNTAX: "is not a valid syntax",
 };
 
+const BINARY_OPERATION_MAP = {
+	"+": (a, b) => a + b,
+	"-": (a, b) => a - b,
+	"*": (a, b) => a * b,
+	"**": (a, b) => a ** b,
+	"==": (a, b) => a == b,
+	"===": (a, b) => a === b,
+	"!=": (a, b) => a != b,
+	"!==": (a, b) => a !== b,
+	">": (a, b) => a > b,
+	">=": (a, b) => a >= b,
+	"<": (a, b) => a < b,
+	"<=": (a, b) => a <= b,
+	"%": (a, b) => a % b,
+	"/": (a, b) => a / b,
+	"|": (a, b) => a | b,
+	"&": (a, b) => a & b,
+	"^": (a, b) => a ^ b,
+	"<<": (a, b) => a << b,
+	">>": (a, b) => a >> b,
+	">>>": (a, b) => a >>> b,
+	in: (a, b) => a in b,
+	instanceof: (a, b) => a instanceof b,
+};
+
 function createGlobalScope() {
 	const scope = Object.create(null);
 	const { builtin } = globals;
@@ -234,57 +259,12 @@ export class Evaluator {
 		const op = node.operator;
 		const left = this.visit(node.left);
 		const right = this.visit(node.right);
-		switch (op) {
-			case "+":
-				return left + right;
-			case "-":
-				return left - right;
-			case "*":
-				return left * right;
-			case "**":
-				return left ** right;
-			case "==":
-				return left == right;
-			case "===":
-				return left === right;
-			case "!=":
-				return left != right;
-			case "!==":
-				return left !== right;
-			case ">":
-				return left > right;
-			case ">=":
-				return left >= right;
-			case "<":
-				return left < right;
-			case "<=":
-				return left <= right;
-			case "%":
-				return left % right;
-			case "/":
-				return left / right;
-			case "|":
-				return left | right;
-			case "&":
-				return left & right;
-			case "^":
-				return left ^ right;
-			case "<<":
-				return left << right;
-			case ">>":
-				return left >> right;
-			case ">>>":
-				return left >>> right;
-			case "in": {
-				return left in right;
-			}
-			case "instanceof": {
-				return left instanceof right;
-			}
-			default: {
-				throw new Error(`Unsupported operator: ${node.operator}`);
-			}
+
+		if (BINARY_OPERATION_MAP.hasOwnProperty(op)) {
+			return BINARY_OPERATION_MAP[op](left, right);
 		}
+
+		throw new Error(`Unsupported operator: ${node.operator}`);
 	}
 
 	/**
