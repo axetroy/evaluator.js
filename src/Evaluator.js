@@ -129,12 +129,12 @@ const mutableMethods = new Set([
 /**
  * A JavaScript expression evaluator that safely evaluates expressions within a sandboxed environment.
  * Supports various JavaScript features including arithmetic, logical operations, functions, and more.
- * 
+ *
  * Security features:
  * - Blocks mutable methods to prevent side effects
  * - No access to eval() or Function() constructor
  * - Sandboxed scope with limited global objects
- * 
+ *
  * @example
  * const evaluator = new Evaluator({ x: 10, y: 20 });
  * evaluator.evaluate('x + y') // returns 30
@@ -147,6 +147,17 @@ export class Evaluator {
 	 */
 	constructor(variables = {}) {
 		this.scopes = [variables, GLOBAL_SCOPE]; // Scope stack: [user variables, global scope]
+	}
+
+	/**
+	 * Evaluates a JavaScript expression with an optional context.
+	 * @param {string} expression
+	 * @param {unknown} [context]
+	 * @returns
+	 */
+	static evaluate(expression, context) {
+		const evaluator = new Evaluator(context);
+		return evaluator.evaluate(expression);
 	}
 
 	/**
@@ -412,7 +423,7 @@ export class Evaluator {
 	 */
 	handleMemberExpression(node) {
 		const object = this.visit(node.object);
-		
+
 		// Determine property name: either identifier name or computed value
 		const isStaticProperty = node.property.type === "Identifier" && !node.computed;
 		const property = isStaticProperty ? node.property.name : this.visit(node.property);
@@ -480,7 +491,7 @@ export class Evaluator {
 			for (let i = 0; i < paramCount; i++) {
 				newScope[node.params[i].name] = args[i];
 			}
-			
+
 			// Push new scope, evaluate body, then pop scope
 			this.scopes.unshift(newScope);
 			const result = this.visit(node.body);
@@ -519,14 +530,14 @@ export class Evaluator {
 	handleTemplateLiteral(node) {
 		let result = "";
 		const expressionCount = node.expressions.length;
-		
+
 		for (let i = 0; i < node.quasis.length; i++) {
 			result += node.quasis[i].value.raw;
 			if (i < expressionCount) {
 				result += this.visit(node.expressions[i]);
 			}
 		}
-		
+
 		return result;
 	}
 
@@ -553,7 +564,7 @@ export class Evaluator {
 			case "MemberExpression": {
 				const objectStr = this.getNodeString(node.object);
 				const propertyStr = this.getNodeString(node.property);
-				
+
 				if (node.computed) {
 					return `${objectStr}[${propertyStr}]`;
 				}
