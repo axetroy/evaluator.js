@@ -91,16 +91,6 @@ Evaluates a template string by replacing `{{ expression }}` patterns with their 
 
 **Example:**
 
-````js
-import { evalTemplate } from "ecma-evaluator";
-
--   `template` (string): The template string containing `{{ expression }}` patterns
--   `context` (object, optional): An object containing variables to use in expressions
-
-**Returns:** The template with all expressions evaluated and replaced (string)
-
-**Example:**
-
 ```js
 import { evalTemplate } from "ecma-evaluator";
 
@@ -131,7 +121,7 @@ evalTemplate("Status: {{ isActive ? 'Active' : 'Inactive' }}", { isActive: true 
 // Optional chaining
 evalTemplate("Value: {{ obj?.prop?.value ?? 'N/A' }}", { obj: null });
 // Output: "Value: N/A"
-````
+```
 
 ### Error Handling
 
