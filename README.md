@@ -9,13 +9,13 @@ A tiny, fast, and **secure** JavaScript expression evaluator for safely evaluati
 
 ## Features
 
-✨ **Secure by design** - Sandboxed execution environment that blocks mutable operations and prevents side effects
-🚀 **Fast & lightweight** - Minimal dependencies, uses the efficient `acorn` parser
-📦 **Zero configuration** - Works out of the box with sensible defaults
-🎯 **Rich feature set** - Supports most JavaScript expressions including arithmetic, logical operations, functions, and more
-🔒 **No eval()** - Does not use `eval()` or `Function()` constructor
-💪 **TypeScript support** - Includes TypeScript type definitions
-📝 **Template strings** - Evaluate expressions within template strings using `{{ }}` syntax
+-   ✨ **Secure by design** - Sandboxed execution environment that blocks mutable operations and prevents side effects
+-   🚀 **Fast & lightweight** - Minimal dependencies, uses the efficient `acorn` parser
+-   📦 **Zero configuration** - Works out of the box with sensible defaults
+-   🎯 **Rich feature set** - Supports most JavaScript expressions including arithmetic, logical operations, functions, and more
+-   🔒 **No eval()** - Does not use `eval()` or `Function()` constructor
+-   💪 **TypeScript support** - Includes TypeScript type definitions
+-   📝 **Template strings** - Evaluate expressions within template strings using `{{ }}` syntax
 
 ## Installation
 
