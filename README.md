@@ -77,11 +77,22 @@ evalExpression("[1, 2, 3].map(x => x * 2)"); // [2, 4, 6]
 evalExpression("score >= 60 ? 'Pass' : 'Fail'", { score: 75 }); // "Pass"
 ```
 
-### `evalTemplate(template, context?)`
+### `evalTemplate(template, context?, templateParserOptions?)`
 
 Evaluates a template string by replacing `{{ expression }}` patterns with their evaluated values.
 
 **Parameters:**
+
+-   `template` (string): The template string to evaluate
+-   `context` (object, optional): An object containing variables to use in the template
+-   `templateParserOptions` (object, optional): Options for the template parser
+
+**Returns:** The evaluated template string
+
+**Example:**
+
+````js
+import { evalTemplate } from "ecma-evaluator";
 
 -   `template` (string): The template string containing `{{ expression }}` patterns
 -   `context` (object, optional): An object containing variables to use in expressions
@@ -120,7 +131,7 @@ evalTemplate("Status: {{ isActive ? 'Active' : 'Inactive' }}", { isActive: true 
 // Optional chaining
 evalTemplate("Value: {{ obj?.prop?.value ?? 'N/A' }}", { obj: null });
 // Output: "Value: N/A"
-```
+````
 
 ### Error Handling
 
