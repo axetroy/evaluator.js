@@ -262,6 +262,13 @@ test("Disable eval()", () => {
 	assert.throws(() => evaluator.evaluate('eval("foo")'), { message: "eval is not defined" });
 });
 
+describe("disable Function constructor", () => {
+	test("Disable Function constructor", () => {
+		assert.throws(() => evaluator.evaluate('new Function("alert(123)")'), { message: "Cannot use new with Function constructor" });
+		assert.throws(() => evaluator.evaluate('Function("alert(123)")'), { message: "Function constructor is not allowed" });
+	});
+});
+
 // 测试模板字符串
 test("Template strings", () => {
 	assert.equal(evaluator.evaluate("`Hello, ${5 + 5}!`"), "Hello, 10!");

@@ -9,6 +9,7 @@ const ERROR_MESSAGES = {
 	NOT_A_FUNCTION: "is not a function",
 	PROPERTY_READ_ERROR: "Cannot read property",
 	VARIABLE_NOT_DEFINED: "is not defined",
+	FUNCTION_CONSTRUCTOR_NOT_ALLOWED: "Function constructor is not allowed",
 };
 
 function createGlobalScope() {
@@ -466,6 +467,10 @@ export class Evaluator {
 				return void 0;
 			}
 			throw new TypeError(`${calledString} ${ERROR_MESSAGES.NOT_A_FUNCTION}`);
+		}
+
+		if (func === Function) {
+			throw new Error(ERROR_MESSAGES.FUNCTION_CONSTRUCTOR_NOT_ALLOWED);
 		}
 
 		// 仅在存在参数时构建数组
