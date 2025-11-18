@@ -1,6 +1,8 @@
 import { Evaluator } from "./Evaluator.js";
 import { TemplateParser } from "./TemplateParser.js";
 
+export { Evaluator };
+
 /**
  * Evaluates a JavaScript expression with an optional context.
  * @param {string} expression - The JavaScript expression to evaluate
@@ -18,14 +20,15 @@ export function evalExpression(expression, context) {
  * Undefined variables in expressions are replaced with empty strings instead of throwing errors.
  * @param {string} template - The template string containing ${{ expression }} patterns
  * @param {Object} [context] - Optional context object with variables to use in expressions
+ * @param {Object} [templateParserOptions] - Optional options for the template parser
  * @returns {string} The template with all expressions evaluated and replaced
  * @example
  * evalTemplate('Hello {{ name }}!', { name: 'World' }) // returns 'Hello World!'
  */
-export function evalTemplate(template, context) {
+export function evalTemplate(template, context, templateParserOptions) {
 	let result = "";
 
-	for (const token of TemplateParser.parse(template)) {
+	for (const token of TemplateParser.parse(template, templateParserOptions)) {
 		if (token.type === "text") {
 			result += token.value;
 		} else if (token.type === "expression") {

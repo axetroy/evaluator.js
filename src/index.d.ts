@@ -1,3 +1,8 @@
+import { Evaluator } from "./Evaluator.js";
+import type { TemplateParserOptions } from "./TemplateParser.js";
+
+export { Evaluator };
+
 /**
  * 解析表达式
  * @param expr
@@ -20,4 +25,4 @@ export declare function evalExpression<T = unknown>(expr: string, context?: unkn
  * evalTemplate("Hello ${{ name }}!", context); // Hello world!
  * ```
  */
-export declare function evalTemplate(template: string, context?: unknown): string;
+export declare function evalTemplate(template: string, context?: unknown, templateParserOptions?: TemplateParserOptions): string;
