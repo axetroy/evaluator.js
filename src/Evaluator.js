@@ -484,7 +484,7 @@ export class Evaluator {
 			}
 		}
 
-		const calledString = this.getNodeString(node.callee);
+		const calledString = getNodeString(node.callee);
 
 		const func = this.visit(node.callee);
 
@@ -525,39 +525,43 @@ export class Evaluator {
 
 		return result;
 	}
+}
 
-	/**
-	 * Converts an AST node to a human-readable string representation for error messages.
-	 * @private
-	 * @param {Object} node - The AST node to convert
-	 * @returns {string|null} A string representation of the node, or null if not supported
-	 */
-	getNodeString(node) {
-		switch (node.type) {
-			case "Identifier": {
-				return node.name;
+/**
+ *
+ * @param {import('acorn').Node} node
+ * @returns
+ */
+export function getNodeString(node) {
+	switch (node.type) {
+		case "Identifier": {
+			return node.name;
+		}
+		case "Literal": {
+			return node.raw;
+		}
+		case "ArrayExpression": {
+			return `[${node.elements.map((child) => getNodeString(child)).join(",")}]`;
+		}
+		case "ObjectExpression": {
+			// if keys is empty
+			if (node.properties.length === 0) {
+				return "{}";
 			}
-			case "Literal": {
-				return node.raw;
-			}
-			case "ArrayExpression": {
-				return "(array)";
-			}
-			case "ObjectExpression": {
-				return "(object)";
-			}
-			case "MemberExpression": {
-				const objectStr = this.getNodeString(node.object);
-				const propertyStr = this.getNodeString(node.property);
 
-				if (node.computed) {
-					return `${objectStr}[${propertyStr}]`;
-				}
-				return `${objectStr}.${propertyStr}`;
+			return "{(intermediate value)}";
+		}
+		case "MemberExpression": {
+			const objectStr = getNodeString(node.object);
+			const propertyStr = getNodeString(node.property);
+
+			if (node.computed) {
+				return `${objectStr}[${propertyStr}]`;
 			}
-			default: {
-				return null;
-			}
+			return `${objectStr}.${propertyStr}`;
+		}
+		default: {
+			return null;
 		}
 	}
 }

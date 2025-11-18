@@ -1,3 +1,5 @@
+import { Node } from "acorn";
+
 export declare class Evaluator {
 	constructor(variables: unknown);
 
@@ -5,3 +7,5 @@ export declare class Evaluator {
 
 	evaluate<T = unknown>(expression: string): T;
 }
+
+export declare function getNodeString(node: Node): string;

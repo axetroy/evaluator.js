@@ -1,7 +1,7 @@
 import assert from "node:assert/strict";
-import { beforeEach, test } from "node:test";
+import { beforeEach, describe, test } from "node:test";
 
-import { Evaluator } from "./Evaluator.js"; // 导入上面的 Evaluator 实现
+import { Evaluator, getNodeString } from "./Evaluator.js"; // 导入上面的 Evaluator 实现
 
 /**
  * @type {Evaluator}
@@ -70,8 +70,8 @@ test("Error handling", () => {
 		assert.throws(() => evaluator.evaluate("foo.undefinedProperty()"), /foo\.undefinedProperty is not a function/);
 		assert.throws(() => evaluator.evaluate('foo["undefinedProperty"]()'), /foo\["undefinedProperty"\] is not a function/);
 		assert.throws(() => evaluator.evaluate("foo[1]()"), /foo\[1\] is not a function/);
-		assert.throws(() => evaluator.evaluate("foo[[1,2,3]]()"), /foo\[\(array\)] is not a function/);
-		assert.throws(() => evaluator.evaluate("foo[{}]()"), /foo\[\(object\)] is not a function/);
+		assert.throws(() => evaluator.evaluate("foo[[1,2,3]]()"), /foo\[\[1,2,3\]\] is not a function/);
+		assert.throws(() => evaluator.evaluate("foo[{}]()"), /foo\[{}\] is not a function/);
 	}
 });
 
@@ -661,4 +661,167 @@ test("Promise operations", () => {
 	// Note: Promise.resolve and Promise.reject may not work as expected in the evaluator
 	// because they need proper 'this' binding
 	assert.equal(evaluator.evaluate("new Promise((resolve) => resolve(42))") instanceof Promise, true);
+});
+
+describe("getNodeString", () => {
+	describe("Identifier", () => {
+		test("should return correct string for Identifier", () => {
+			const node = { type: "Identifier", name: "myVar" };
+			assert.equal(getNodeString(node), "myVar");
+		});
+	});
+
+	describe("Literal", () => {
+		test("should return correct string for Literal", () => {
+			const node = { type: "Literal", value: 123, raw: "123" };
+			assert.equal(getNodeString(node), "123");
+		});
+	});
+
+	describe("ArrayExpression", () => {
+		test("should return correct string for ArrayExpression", () => {
+			const node = {
+				type: "ArrayExpression",
+				elements: [
+					{ type: "Literal", value: 1, raw: "1" },
+					{ type: "Literal", value: 2, raw: "2" },
+					{ type: "Literal", value: 3, raw: "3" },
+				],
+			};
+			assert.equal(getNodeString(node), "[1,2,3]");
+		});
+	});
+
+	describe("ObjectExpression", () => {
+		test("{}", () => {
+			const node = {
+				type: "ObjectExpression",
+				properties: [],
+			};
+			assert.equal(getNodeString(node), "{}");
+		});
+
+		test("{ a: 1, b: 2 }", () => {
+			const node = {
+				type: "ObjectExpression",
+				properties: [
+					{
+						type: "Property",
+						key: { type: "Identifier", name: "a" },
+						value: { type: "Literal", value: 1, raw: "1" },
+						computed: false,
+					},
+					{
+						type: "Property",
+						key: { type: "Identifier", name: "b" },
+						value: { type: "Literal", value: 2, raw: "2" },
+						computed: false,
+					},
+				],
+			};
+			assert.equal(getNodeString(node), "{(intermediate value)}");
+		});
+
+		test("{ [key]: 42 }", () => {
+			const node = {
+				type: "ObjectExpression",
+				properties: [
+					{
+						type: "Property",
+						key: { type: "Identifier", name: "key" },
+						value: { type: "Literal", value: 42, raw: "42" },
+						computed: true,
+					},
+				],
+			};
+			assert.equal(getNodeString(node), "{(intermediate value)}");
+		});
+	});
+
+	describe("MemberExpression", () => {
+		test("obj.property", () => {
+			const node = {
+				type: "MemberExpression",
+				object: { type: "Identifier", name: "obj" },
+				property: { type: "Identifier", name: "property" },
+				computed: false,
+			};
+			assert.equal(getNodeString(node), "obj.property");
+		});
+
+		test("obj.foo.bar.baz", () => {
+			const node = {
+				type: "MemberExpression",
+				object: {
+					type: "MemberExpression",
+					object: {
+						type: "MemberExpression",
+						object: { type: "Identifier", name: "obj" },
+						property: { type: "Identifier", name: "foo" },
+						computed: false,
+					},
+					property: { type: "Identifier", name: "bar" },
+					computed: false,
+				},
+				property: { type: "Identifier", name: "baz" },
+				computed: false,
+			};
+			assert.equal(getNodeString(node), "obj.foo.bar.baz");
+		});
+
+		test('obj["property"]', () => {
+			const node = {
+				type: "MemberExpression",
+				object: { type: "Identifier", name: "obj" },
+				property: { type: "Literal", value: "property", raw: '"property"' },
+				computed: true,
+			};
+			assert.equal(getNodeString(node), 'obj["property"]');
+		});
+
+		test("obj[key]", () => {
+			const node = {
+				type: "MemberExpression",
+				object: { type: "Identifier", name: "obj" },
+				property: { type: "Identifier", name: "key" },
+				computed: true,
+			};
+			assert.equal(getNodeString(node), "obj[key]");
+		});
+
+		test("obj.arr[0]", () => {
+			const node = {
+				type: "MemberExpression",
+				object: {
+					type: "MemberExpression",
+					object: { type: "Identifier", name: "obj" },
+					property: { type: "Identifier", name: "arr" },
+					computed: false,
+				},
+				property: { type: "Literal", value: 0, raw: "0" },
+				computed: true,
+			};
+			assert.equal(getNodeString(node), "obj.arr[0]");
+		});
+
+		test("chained member expression with computed properties", () => {
+			const node = {
+				type: "MemberExpression",
+				object: {
+					type: "MemberExpression",
+					object: {
+						type: "MemberExpression",
+						object: { type: "Identifier", name: "obj" },
+						property: { type: "Identifier", name: "foo" },
+						computed: false,
+					},
+					property: { type: "Literal", value: "bar", raw: '"bar"' },
+					computed: true,
+				},
+				property: { type: "Identifier", name: "baz" },
+				computed: false,
+			};
+			assert.equal(getNodeString(node), 'obj.foo["bar"].baz');
+		});
+	});
 });
