@@ -1,8 +1,6 @@
 import * as acorn from "acorn";
 import globals from "globals";
 
-const { builtin } = globals;
-
 // Error message constants for better maintainability
 const ERROR_MESSAGES = {
 	DELETE_NOT_SUPPORTED: "Delete operator is mutable and not supported",
@@ -13,30 +11,39 @@ const ERROR_MESSAGES = {
 	VARIABLE_NOT_DEFINED: "is not defined",
 };
 
-const GLOBAL_SCOPE = Object.create(null);
+function createGlobalScope() {
+	const scope = Object.create(null);
+	const { builtin } = globals;
 
-// Shared global scope object to avoid recreation on each Evaluator instantiation
-Object.keys(builtin).forEach((key) => {
-	if (key in globalThis && key !== "eval" && key !== "globalThis") {
-		Object.defineProperty(GLOBAL_SCOPE, key, {
-			value: globalThis[key],
-			writable: false,
-			enumerable: false,
-			configurable: false,
-		});
-	}
-});
+	Object.keys(builtin).forEach((key) => {
+		if (key in globalThis && key !== "eval" && key !== "globalThis") {
+			const isWritable = builtin[key];
 
-Object.defineProperty(GLOBAL_SCOPE, "globalThis", {
-	value: GLOBAL_SCOPE,
-	writable: false,
-	enumerable: false,
-	configurable: false,
-});
+			Object.defineProperty(scope, key, {
+				value: globalThis[key],
+				writable: isWritable,
+				enumerable: false,
+				configurable: false,
+			});
+		}
+	});
 
-// Set of methods that mutate their objects and should be blocked for safety
-const mutableMethods = new Set(
-	[
+	Object.defineProperty(scope, "globalThis", {
+		value: scope,
+		writable: false,
+		enumerable: false,
+		configurable: false,
+	});
+
+	return scope;
+}
+
+/** @type {() => Set<Function>} */
+const getMutableMethods = (() => {
+	let MUTABLE_METHODS = null;
+
+	// --- lazy mutable methods set ---
+	const MUTABLE_METHOD_PATHS = [
 		"Array.prototype.push",
 		"Array.prototype.pop",
 		"Array.prototype.shift",
@@ -82,23 +89,29 @@ const mutableMethods = new Set(
 		"Date.prototype.setTime",
 		"Date.prototype.setYear",
 		"RegExp.prototype.compile",
-	]
-		.map((path) => {
-			const [object, ...properties] = path.split(".");
+	];
 
+	return () => {
+		if (MUTABLE_METHODS) return MUTABLE_METHODS;
+
+		const set = new Set();
+		for (const path of MUTABLE_METHOD_PATHS) {
+			const [object, ...properties] = path.split(".");
 			let current = globalThis[object];
 			for (const prop of properties) {
 				if (current && Object.hasOwn(current, prop)) {
 					current = current[prop];
 				} else {
-					return null;
+					current = null;
+					break;
 				}
 			}
-
-			return typeof current === "function" ? current : null;
-		})
-		.filter(Boolean)
-);
+			if (typeof current === "function") set.add(current);
+		}
+		MUTABLE_METHODS = set;
+		return MUTABLE_METHODS;
+	};
+})();
 
 /**
  * A JavaScript expression evaluator that safely evaluates expressions within a sandboxed environment.
@@ -120,7 +133,7 @@ export class Evaluator {
 	 * @param {Object} [variables={}] - An optional object containing variables to make available in the evaluation context
 	 */
 	constructor(variables = {}) {
-		this.scopes = [variables, GLOBAL_SCOPE]; // Scope stack: [user variables, global scope]
+		this.scopes = [variables, createGlobalScope()];
 	}
 
 	/**
@@ -218,7 +231,8 @@ export class Evaluator {
 
 				const Constructor = this.visit(node.callee);
 
-				const args = node.arguments.map((arg) => this.visit(arg));
+				// 仅在存在参数时构建数组
+				const args = node.arguments.length ? node.arguments.map((arg) => this.visit(arg)) : [];
 
 				return new Constructor(...args);
 			}
@@ -262,7 +276,6 @@ export class Evaluator {
 			}
 			case "==": {
 				// Intentionally using loose equality as per JavaScript semantics
-				// biome-ignore lint/suspicious/noDoubleEquals: <explanation>
 				return this.visit(node.left) == this.visit(node.right);
 			}
 			case "===": {
@@ -270,7 +283,6 @@ export class Evaluator {
 			}
 			case "!=": {
 				// Intentionally using loose inequality as per JavaScript semantics
-				// biome-ignore lint/suspicious/noDoubleEquals: <explanation>
 				return this.visit(node.left) != this.visit(node.right);
 			}
 			case "!==": {
@@ -464,10 +476,10 @@ export class Evaluator {
 	 * @private
 	 */
 	handleCallExpression(node) {
+		// 移除对 callee.object 的冗余检查，避免重复求值与错误集合匹配
 		if (node.callee.type === "MemberExpression") {
 			const object = this.visit(node.callee.object);
-
-			if (mutableMethods.has(object)) {
+			if (getMutableMethods().has(object)) {
 				throw new Error(ERROR_MESSAGES.MUTABLE_METHOD);
 			}
 		}
@@ -484,14 +496,14 @@ export class Evaluator {
 			throw new TypeError(`${calledString} ${ERROR_MESSAGES.NOT_A_FUNCTION}`);
 		}
 
-		const args = node.arguments.map((arg) => this.visit(arg));
+		// 仅在存在参数时构建数组
+		const args = node.arguments.length ? node.arguments.map((arg) => this.visit(arg)) : [];
 
-		if (mutableMethods.has(func)) {
+		if (getMutableMethods().has(func)) {
 			throw new Error(ERROR_MESSAGES.MUTABLE_METHOD);
 		}
 
 		const target = node.callee.type === "MemberExpression" ? this.visit(node.callee.object) : null;
-
 		return func.apply(target, args);
 	}
 
