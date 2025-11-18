@@ -63,6 +63,7 @@
         "url": "git+https://github.com/axetroy/ecma-evaluator.git"
     },
     "dependencies": {
-        "acorn": "^8.15.0"
+        "acorn": "^8.15.0",
+        "globals": "^16.5.0"
     }
 }

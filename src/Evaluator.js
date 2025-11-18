@@ -1,4 +1,7 @@
 import * as acorn from "acorn";
+import globals from "globals";
+
+const { builtin } = globals;
 
 // Error message constants for better maintainability
 const ERROR_MESSAGES = {
@@ -10,62 +13,25 @@ const ERROR_MESSAGES = {
 	VARIABLE_NOT_DEFINED: "is not defined",
 };
 
-// List of TypedArray constructors available in the environment
-const typeArrayConstructors = [
-	Int8Array,
-	Uint8Array,
-	Uint8ClampedArray,
-	Int16Array,
-	Uint16Array,
-	Int32Array,
-	Uint32Array,
-	Float32Array,
-	Float64Array,
-	globalThis.BigInt64Array,
-	globalThis.BigUint64Array,
-].filter(Boolean);
+const GLOBAL_SCOPE = Object.create(null);
 
 // Shared global scope object to avoid recreation on each Evaluator instantiation
-const GLOBAL_SCOPE = Object.assign(Object.create(null), {
-	Infinity,
-	null: null,
-	undefined,
-	NaN: Number.NaN,
-	isNaN: Number.isNaN,
-	isFinite: Number.isFinite,
-	parseFloat: Number.parseFloat,
-	parseInt: Number.parseInt,
-	encodeURI: globalThis.encodeURI,
-	encodeURIComponent: globalThis.encodeURIComponent,
-	decodeURI: globalThis.decodeURI,
-	decodeURIComponent: globalThis.decodeURIComponent,
-	Number,
-	String,
-	Boolean,
-	BigInt: globalThis.BigInt,
-	Symbol: globalThis.Symbol,
-	Object,
-	Array,
-	Set,
-	WeakSet,
-	Map,
-	WeakMap,
-	Math,
-	JSON,
-	Date,
-	RegExp,
-	Error,
-	EvalError,
-	RangeError,
-	ReferenceError,
-	SyntaxError,
-	TypeError,
-	URIError,
-	Promise,
-	...typeArrayConstructors.reduce((acc, obj) => {
-		acc[obj.name] = obj;
-		return acc;
-	}, {}),
+Object.keys(builtin).forEach((key) => {
+	if (key in globalThis && key !== "eval" && key !== "globalThis") {
+		Object.defineProperty(GLOBAL_SCOPE, key, {
+			value: globalThis[key],
+			writable: false,
+			enumerable: false,
+			configurable: false,
+		});
+	}
+});
+
+Object.defineProperty(GLOBAL_SCOPE, "globalThis", {
+	value: GLOBAL_SCOPE,
+	writable: false,
+	enumerable: false,
+	configurable: false,
 });
 
 // Set of methods that mutate their objects and should be blocked for safety
