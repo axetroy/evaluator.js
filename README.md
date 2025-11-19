@@ -402,7 +402,7 @@ const emailTemplate = `
 Hello {{ user.name }},
 
 Your order #{{ order.id }} has been {{ order.status }}.
-Total: ${{ order.total.toFixed(2) }}
+Total: {{ order.total.toFixed(2) }}
 
 Thank you for shopping with us!
 `;

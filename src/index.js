@@ -16,9 +16,9 @@ export function evalExpression(expression, context) {
 }
 
 /**
- * Evaluates a template string by replacing ${{ expression }} patterns with their evaluated values.
+ * Evaluates a template string by replacing {{ expression }} patterns with their evaluated values.
  * Undefined variables in expressions are replaced with empty strings instead of throwing errors.
- * @param {string} template - The template string containing ${{ expression }} patterns
+ * @param {string} template - The template string containing {{ expression }} patterns
  * @param {Object} [context] - Optional context object with variables to use in expressions
  * @param {Object} [templateParserOptions] - Optional options for the template parser
  * @returns {string} The template with all expressions evaluated and replaced

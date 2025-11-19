@@ -22,7 +22,7 @@ export declare function evalExpression<T = unknown>(expr: string, context?: unkn
  * @example
  * ```js
  * const context = { name: "world" };
- * evalTemplate("Hello ${{ name }}!", context); // Hello world!
+ * evalTemplate("Hello {{ name }}!", context); // Hello world!
  * ```
  */
 export declare function evalTemplate(template: string, context?: unknown, templateParserOptions?: TemplateParserOptions): string;
