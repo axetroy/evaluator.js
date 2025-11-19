@@ -484,6 +484,49 @@ describe("Expressions", () => {
 			const evaluator = new Evaluator({ obj1: { a: 1 }, obj2: { b: 2 }, merge: (a, b) => ({ ...a, ...b }) });
 			assert.deepEqual(evaluator.evaluate("merge({...obj1, ...obj2})"), { a: 1, b: 2 });
 		});
+
+		test("should handle spread with strings", () => {
+			assert.deepEqual(evaluator.evaluate('[..."abc"]'), ["a", "b", "c"]);
+		});
+
+		test("should handle spread with sets", () => {
+			assert.deepEqual(evaluator.evaluate("[...new Set([1,2,2,3])]"), [1, 2, 3]);
+		});
+
+		test("should handle spread with maps", () => {
+			assert.deepEqual(evaluator.evaluate("[...new Map([[1, 'a'], [2, 'b'], [3, 'c']])]"), [
+				[1, "a"],
+				[2, "b"],
+				[3, "c"],
+			]);
+		});
+
+		test("should handle nested spreads", () => {
+			const evaluator = new Evaluator({ arr1: [1, 2], arr2: [3, 4], arr3: [5, 6] });
+
+			assert.deepEqual(evaluator.evaluate("[...arr1, ...arr2, ...arr3]"), [1, 2, 3, 4, 5, 6]);
+		});
+
+		test("should handle spread with empty arrays", () => {
+			const evaluator = new Evaluator({ arr1: [1, 2], arr2: [] });
+			assert.deepEqual(evaluator.evaluate("[...arr1, ...arr2]"), [1, 2]);
+			assert.deepEqual(evaluator.evaluate("[...arr2, ...arr1]"), [1, 2]);
+		});
+
+		test("should handle spread with single-element arrays", () => {
+			const evaluator = new Evaluator({ arr1: [42] });
+			assert.deepEqual(evaluator.evaluate("[...arr1]"), [42]);
+		});
+
+		test("should handle spread with mixed types", () => {
+			const evaluator = new Evaluator({ arr1: [1, "two"], arr2: [true, null] });
+			assert.deepEqual(evaluator.evaluate("[...arr1, ...arr2]"), [1, "two", true, null]);
+		});
+
+		test("should handle spread with new expressions", () => {
+			const evaluator = new Evaluator({ arr1: [1, 2], arr2: [3, 4] });
+			assert.deepEqual(evaluator.evaluate("new Set([...arr1, ...arr2])"), new Set([1, 2, 3, 4]));
+		});
 	});
 
 	describe("Template Literals", () => {
@@ -677,10 +720,7 @@ describe("Variables and Context", () => {
 describe("Complex Expressions", () => {
 	test("should handle complex nested expressions", () => {
 		assert.equal(evaluator.evaluate("((1 + 2) * (3 + 4)) / ((5 - 2) + (6 - 4))"), 4.2);
-		assert.deepEqual(
-			evaluator.evaluate("[1, 2, 3].map(x => x * 2).filter(x => x > 2).reduce((a, b) => a + b, 0)"),
-			10
-		);
+		assert.deepEqual(evaluator.evaluate("[1, 2, 3].map(x => x * 2).filter(x => x > 2).reduce((a, b) => a + b, 0)"), 10);
 		const arr = [1, 2, 3].map((x) => x * 2);
 		const evaluator2 = new Evaluator({ arr });
 		assert.equal(evaluator2.evaluate("Math.max(arr[0], arr[1], arr[2])"), 6);
@@ -692,7 +732,9 @@ describe("Security and Restrictions", () => {
 		test("should block mutable array methods", () => {
 			assert.throws(() => evaluator.evaluate("[1, 2].push(3)"), { message: "Mutable method is not allowed" });
 			assert.throws(() => evaluator.evaluate("[1, 2].pop()"), { message: "Mutable method is not allowed" });
-			assert.throws(() => evaluator.evaluate("Array.prototype.splice.call([1,2,3], 1, 1)"), { message: "Mutable method is not allowed" });
+			assert.throws(() => evaluator.evaluate("Array.prototype.splice.call([1,2,3], 1, 1)"), {
+				message: "Mutable method is not allowed",
+			});
 		});
 
 		test("should block mutable object methods", () => {
