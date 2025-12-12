@@ -33,8 +33,8 @@ class RspackDtsCopyPlugin {
 				const absolutePath = path.join(srcDir, file);
 				const filename = path.basename(file, ".d.ts");
 
-				compilation.emitAsset("esm/" + filename + ".d.mts", createSource(absolutePath));
-				compilation.emitAsset("cjs/" + filename + ".d.cts", createSource(absolutePath));
+				compilation.emitAsset("esm/" + filename + ".d.mts", createSource(absolutePath, true));
+				compilation.emitAsset("cjs/" + filename + ".d.cts", createSource(absolutePath, false));
 			}
 		});
 	}
