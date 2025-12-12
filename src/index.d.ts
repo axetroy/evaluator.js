@@ -1,7 +1,8 @@
 import { Evaluator } from "./Evaluator.js";
 import type { TemplateParserOptions } from "./TemplateParser.js";
+import { TemplateParser } from "./TemplateParser.js";
 
-export { Evaluator };
+export { Evaluator, TemplateParser };
 
 /**
  * 解析表达式

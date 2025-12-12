@@ -1,7 +1,7 @@
 import { Evaluator } from "./Evaluator.js";
 import { TemplateParser } from "./TemplateParser.js";
 
-export { Evaluator };
+export { Evaluator, TemplateParser };
 
 /**
  * Evaluates a JavaScript expression with an optional context.
