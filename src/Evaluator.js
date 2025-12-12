@@ -192,9 +192,6 @@ export class Evaluator {
 			case "MemberExpression": {
 				return this.handleMemberExpression(node);
 			}
-			case "ObjectExpression": {
-				return this.handleObjectExpression(node);
-			}
 			case "ArrayExpression": {
 				return this.handleArrayExpression(node);
 			}
@@ -360,20 +357,6 @@ export class Evaluator {
 		}
 
 		return object[property];
-	}
-
-	/**
-	 * Handles object literal expressions.
-	 * @private
-	 */
-	handleObjectExpression(node) {
-		const obj = {};
-		for (const prop of node.properties) {
-			const key = prop.key.name || prop.key.value;
-			const value = this.visit(prop.value);
-			obj[key] = value;
-		}
-		return obj;
 	}
 
 	/**
