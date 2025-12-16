@@ -1,8 +1,8 @@
 {
-    "name": "ecma-evaluator",
-    "version": "2.0.4",
+    "name": "jsoncst",
+    "version": "0.1.0",
     "private": false,
-    "description": "A tiny and fast JavaScript expression evaluator.",
+    "description": "A utility to patch the JSON string and preserve the original formatting, including comments and whitespace.",
     "sideEffects": false,
     "files": [
         "dist"

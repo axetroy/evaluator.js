@@ -1,49 +1,48 @@
-import { Evaluator } from "./Evaluator.js";
-import { TemplateParser } from "./TemplateParser.js";
+import { Tokenizer } from "./Tokenizer.js";
+import { CSTBuilder } from "./CSTBuilder.js";
+import { resolvePath } from "./PathResolver.js";
 
-export { Evaluator, TemplateParser };
+function replace(sourceText, patches) {
+	const tokenizer = new Tokenizer(sourceText);
+	const tokens = tokenizer.tokenize();
 
-/**
- * Evaluates a JavaScript expression with an optional context.
- * @param {string} expression - The JavaScript expression to evaluate
- * @param {unknown} [context] - Optional context object with variables to use in the expression
- * @returns {*} The result of evaluating the expression
- * @example
- * evalExpression('a + b', { a: 1, b: 2 }) // returns 3
- */
-export function evalExpression(expression, context) {
-	return Evaluator.evaluate(expression, context);
-}
+	const builder = new CSTBuilder(tokens);
+	const root = builder.build();
 
-/**
- * Evaluates a template string by replacing {{ expression }} patterns with their evaluated values.
- * Undefined variables in expressions are replaced with empty strings instead of throwing errors.
- * @param {string} template - The template string containing {{ expression }} patterns
- * @param {Object} [context] - Optional context object with variables to use in expressions
- * @param {Object} [templateParserOptions] - Optional options for the template parser
- * @returns {string} The template with all expressions evaluated and replaced
- * @example
- * evalTemplate('Hello {{ name }}!', { name: 'World' }) // returns 'Hello World!'
- */
-export function evalTemplate(template, context, templateParserOptions) {
-	let result = "";
+	// 倒叙替换
+	const reverseNodes = patches
+		.map((patch) => {
+			const node = resolvePath(root, patch.path, sourceText);
 
-	for (const token of TemplateParser.parse(template, templateParserOptions)) {
-		if (token.type === "text") {
-			result += token.value;
-		} else if (token.type === "expression") {
-			try {
-				result += Evaluator.evaluate(token.value, context);
-			} catch (error) {
-				// Replace undefined variables with empty string for graceful degradation
-				if (error instanceof ReferenceError && error.message.endsWith("is not defined")) {
-					result += "undefined";
-				} else {
-					throw error;
-				}
-			}
+			return {
+				node,
+				patch,
+			};
+		})
+		.filter((v) => v.node)
+		.sort((a, b) => b.node.start - a.node.start);
+
+	// 确保不会冲突
+	reverseNodes.reduce((lastEnd, { node }) => {
+		if (node.end > lastEnd) {
+			throw new Error(`Patch conflict at path: ${node.path}`);
 		}
+
+		return node.start;
+	}, Infinity);
+
+	let result = sourceText;
+
+	for (const { node, patch } of reverseNodes) {
+		result = result.slice(0, node.start) + patch.value + result.slice(node.end);
 	}
 
 	return result;
 }
+
+const jsoncst = {
+	replace: replace,
+};
+
+export { replace };
+export default jsoncst;

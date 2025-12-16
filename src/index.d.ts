@@ -1,29 +1,11 @@
-import { Evaluator } from "./Evaluator.js";
-import type { TemplateParserOptions } from "./TemplateParser.js";
-import { TemplateParser } from "./TemplateParser.js";
+declare function replace(sourceText: string, patches: Array<{ path: string; value: string }>): string;
 
-export { Evaluator, TemplateParser };
+export { replace };
 
-/**
- * 解析表达式
- * @param expr
- * @example
- * ```js
- * evalExpression('1 + 1'); // 2
- * evalExpression('a > b', { a: 1, b: 2 }); // false
- * evalExpression('a > 10 && b < 10', { a: 11, b: 8 }); // true
- * evalExpression('array.map(v => v + 1)', { array: [1, 2, 3] }) // [2, 3, 4]
- * ```
- */
-export declare function evalExpression<T = unknown>(expr: string, context?: unknown): T;
+interface JSONCTS {
+	replace: typeof replace;
+}
 
-/**
- * 解析模板
- * @param template
- * @example
- * ```js
- * const context = { name: "world" };
- * evalTemplate("Hello {{ name }}!", context); // Hello world!
- * ```
- */
-export declare function evalTemplate(template: string, context?: unknown, templateParserOptions?: TemplateParserOptions): string;
+declare const jsoncts: JSONCTS;
+
+export default jsoncts;
