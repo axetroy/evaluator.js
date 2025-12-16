@@ -28,7 +28,93 @@ npm install jsoncst
 ```js
 import { replace } from "jsoncst";
 
-// TODO: 补全使用示例
+const json = '{"name": "Alice", "age": 30}';
+const result = replace(json, [
+  { path: "age", value: "31" }
+]);
+console.log(result); // {"name": "Alice", "age": 31}
+```
+
+## Usage Examples
+
+### Basic Value Replacement
+
+Replace a simple value in a JSON object:
+
+```js
+const source = '{"a": 1, "b": true}';
+const result = replace(source, [{ path: "a", value: "42" }]);
+// Result: {"a": 42, "b": true}
+```
+
+### Array Element Replacement
+
+Replace elements in arrays using bracket notation:
+
+```js
+const source = '{"arr": [1, 2, 3]}';
+const result = replace(source, [{ path: "arr[1]", value: "99" }]);
+// Result: {"arr": [1, 99, 3]}
+```
+
+### Nested Object Updates
+
+Replace values in deeply nested objects using dot notation:
+
+```js
+const source = '{"a": {"b": {"c": 1}}}';
+const result = replace(source, [{ path: "a.b.c", value: "123" }]);
+// Result: {"a": {"b": {"c": 123}}}
+```
+
+### Multiple Patches
+
+Apply multiple patches in a single operation:
+
+```js
+const source = '{"x": 1, "y": 2, "arr": [3, 4]}';
+const result = replace(source, [
+  { path: "x", value: "10" },
+  { path: "arr[0]", value: "30" }
+]);
+// Result: {"x": 10, "y": 2, "arr": [30, 4]}
+```
+
+### JSON Pointer Format
+
+Use JSON Pointer (RFC 6901) format for path specification:
+
+```js
+const source = '{"a": {"b": [1, 2, 3]}}';
+const result = replace(source, [{ path: "/a/b/2", value: "99" }]);
+// Result: {"a": {"b": [1, 2, 99]}}
+```
+
+### Preserving Formatting
+
+The library preserves the original formatting, including whitespace and comments:
+
+```js
+const source = `{
+  // This is a comment
+  "key": "value" /* inline comment */
+}`;
+const result = replace(source, [{ path: "key", value: '"newValue"' }]);
+// Result:
+// {
+//   // This is a comment
+//   "key": "newValue" /* inline comment */
+// }
+```
+
+### String Values
+
+When replacing with string values, make sure to include quotes:
+
+```js
+const source = '{"greeting": "hello"}';
+const result = replace(source, [{ path: "greeting", value: '"hi"' }]);
+// Result: {"greeting": "hi"}
 ```
 
 ## TypeScript Support
