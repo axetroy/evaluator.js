@@ -9,10 +9,10 @@ A tiny, fast, and **secure** JavaScript expression evaluator for safely evaluati
 
 ## Features
 
--   ✨ **Secure by design** - Sandboxed execution environment that blocks mutable operations and prevents side effects
+-   ✨ **Secure by design** - Sandboxed; blocks mutations/side effects
 -   🚀 **Fast & lightweight** - Minimal dependencies, uses the efficient `acorn` parser
 -   📦 **Zero configuration** - Works out of the box with sensible defaults
--   🎯 **Rich feature set** - Supports most JavaScript expressions including arithmetic, logical operations, functions, and more
+-   🎯 **Rich feature set** - Most JS expressions/functions
 -   🔒 **No eval()** - Does not use `eval()` or `Function()` constructor
 -   💪 **TypeScript support** - Includes TypeScript type definitions
 -   📝 **Template strings** - Evaluate expressions within template strings using `{{ }}` syntax
@@ -336,7 +336,7 @@ evalExpression("new Map([['a', 1], ['b', 2]])"); // Map {"a" => 1, "b" => 2}
 `ecma-evaluator` runs expressions in a sandboxed environment with several security features:
 
 1. **No access to `eval()` or `Function()` constructor** - Prevents dynamic code execution
-2. **Blocked mutable methods** - Methods that mutate objects are blocked to prevent side effects:
+2. **Blocked mutable methods** - Methods that mutate objects are blocked to prevent side effects：
 
     - Array: `push`, `pop`, `shift`, `unshift`, `splice`, `reverse`, `sort`, `fill`, `copyWithin`
     - Object: `freeze`, `defineProperty`, `defineProperties`, `preventExtensions`, `setPrototypeOf`, `assign`
@@ -408,15 +408,15 @@ Thank you for shopping with us!
 `;
 
 const email = evalTemplate(emailTemplate, {
-  user: { name: "John Doe" },
-  order: { id: 12345, status: "shipped", total: 99.99 }
+	user: { name: "John Doe" },
+	order: { id: 12345, status: "shipped", total: 99.99 },
 });
 
 // Dynamic content
-const greeting = evalTemplate(
-  "Good {{ hour < 12 ? 'morning' : hour < 18 ? 'afternoon' : 'evening' }}, {{ name }}!",
-  { hour: new Date().getHours(), name: "Alice" }
-);
+const greeting = evalTemplate("Good {{ hour < 12 ? 'morning' : hour < 18 ? 'afternoon' : 'evening' }}, {{ name }}!", {
+	hour: new Date().getHours(),
+	name: "Alice",
+});
 ```
 
 ### Data Transformation
