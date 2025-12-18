@@ -223,8 +223,8 @@ evalExpression("[1, 2, 3].reduce((a, b) => a + b, 0)"); // 6
 
 ```js
 evalExpression("{ a: 1, b: 2 }"); // { a: 1, b: 2 }
-evalExpression("{ a: 1, b: 2 }.a"); // 1
-evalExpression("{ a: 1, b: 2 }['b']"); // 2
+evalExpression("({ a: 1, b: 2 }).a"); // 1
+evalExpression("({ a: 1, b: 2 })['b']"); // 2
 ```
 
 #### Template Literals
